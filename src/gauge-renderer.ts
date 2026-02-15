@@ -397,10 +397,12 @@ export function renderDial(
         const needleW = dial.size ?? 3;
         const top = layout.trackY;
         const bottom = top + dialLength;
+        const arrowHalfWidth = Math.max(4, needleW + 1);
+        const arrowHeight = Math.max(5, needleW + 2);
         return svg`
           <line x1="${pos}" y1="${top}" x2="${pos}" y2="${bottom}"
             stroke="${color}" stroke-width="${needleW}" stroke-linecap="round" class="gauge-dial-needle" />
-          <polygon points="${pos - 4},${top + 1} ${pos + 4},${top + 1} ${pos},${top + 6}"
+          <polygon points="${pos - arrowHalfWidth},${top - arrowHeight} ${pos + arrowHalfWidth},${top - arrowHeight} ${pos},${top}"
             fill="${color}" />
         `;
       }

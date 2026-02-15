@@ -181,6 +181,14 @@ export class LinearGaugeCard extends LitElement {
       .join(' ');
 
     const displayValue = numericValue !== null ? this._formatValue(numericValue) : stateObj.state;
+    const renderDialBeforeTicks =
+      numericValue !== null && dial.style === 'bar-fill'
+        ? renderDial(numericValue, this._config, layout)
+        : '';
+    const renderDialAfterTicks =
+      numericValue !== null && dial.style !== 'bar-fill'
+        ? renderDial(numericValue, this._config, layout)
+        : '';
 
     return html`
       <ha-card @click="${this._handleAction}" @ha-click="${this._handleAction}">
@@ -207,10 +215,11 @@ export class LinearGaugeCard extends LitElement {
               ${renderTrack(layout, this._config.display ?? {})}
               ${renderSegments(this._config.segments ?? [], layout, this._config.display ?? {})}
               ${renderWarnings(this._config.warnings ?? [], layout, this._config.display ?? {})}
-              ${numericValue !== null ? renderDial(numericValue, this._config, layout) : ''}
+              ${renderDialBeforeTicks}
               ${renderHistory(this._historyData, this._config, layout)}
               ${renderMajorTicks(this._config, layout)}
               ${renderMinorTicks(this._config, layout)}
+              ${renderDialAfterTicks}
             </svg>
           </div>
         </div>
