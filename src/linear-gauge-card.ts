@@ -110,11 +110,6 @@ export class LinearGaugeCard extends LitElement {
     }
 
     const condensed = this._config.condensed === true;
-    if (condensed) {
-      // Condensed mode is intended to pack tightly in dashboard grids.
-      return 1;
-    }
-
     const dial = { ...DEFAULT_DIAL, ...this._config.dial };
     const showName = this._config.show_name !== false;
     const headerVisible =
