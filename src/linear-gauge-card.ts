@@ -92,20 +92,34 @@ export class LinearGaugeCard extends LitElement {
     if (this._config?.orientation === 'vertical') {
       return 6;
     }
-    if (this._config?.condensed) {
-      return 1;
-    }
-    return this._config?.height ? Math.ceil(this._config.height / 50) : 2;
+    return this._estimateHorizontalRows();
   }
 
   public getGridOptions(): { rows: number; columns: number; min_rows: number; min_columns: number } {
     if (this._config?.orientation === 'vertical') {
       return { rows: 6, columns: 3, min_rows: 3, min_columns: 3 };
     }
-    if (this._config?.condensed) {
-      return { rows: 1, columns: 6, min_rows: 1, min_columns: 3 };
+    const rows = this._estimateHorizontalRows();
+    return { rows, columns: 6, min_rows: 1, min_columns: 3 };
+  }
+
+  private _estimateHorizontalRows(): number {
+    if (!this._config) return 2;
+    if (this._config.height) {
+      return Math.max(1, Math.ceil(this._config.height / 50));
     }
-    return { rows: 2, columns: 6, min_rows: 1, min_columns: 3 };
+
+    const condensed = this._config.condensed === true;
+    const dial = { ...DEFAULT_DIAL, ...this._config.dial };
+    const showName = this._config.show_name !== false;
+    const headerVisible =
+      (showName && this._config.name !== false) || (dial.showValue && dial.valuePosition !== 'inside');
+    const headerHeight = headerVisible ? (condensed ? 20 : 28) : 0;
+    const contentPadding = condensed ? 16 : 24;
+    const layout = computeLayout(this._config);
+    const estimatedPx = headerHeight + contentPadding + layout.svgHeight;
+
+    return Math.max(1, Math.ceil(estimatedPx / 50));
   }
 
   // ---- Lifecycle ----

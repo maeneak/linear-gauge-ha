@@ -54,6 +54,7 @@ export function computeLayout(config: LinearGaugeCardConfig): GaugeLayout {
   const max = config.max ?? 100;
 
   const major = { ...DEFAULT_MAJOR_TICK, ...config.ticks?.major };
+  const dial = { ...DEFAULT_DIAL, ...config.dial };
   const showLabels = major.labels;
   const labelSpace = showLabels ? major.labelFontSize + 6 : 0;
   const tickSpace = Math.max(major.size, (config.ticks?.minor ? { ...DEFAULT_MINOR_TICK, ...config.ticks.minor }.size : 0));
@@ -69,7 +70,18 @@ export function computeLayout(config: LinearGaugeCardConfig): GaugeLayout {
     const trackX = padding;
     const trackWidth = svgWidth - padding * 2;
     const bottomPadding = condensed ? 4 : 8;
-    const svgHeight = trackY + trackHeight + bottomTickSpace + bottomLabelSpace + bottomPadding;
+    const defaultBottomExtent = trackHeight + bottomTickSpace + bottomLabelSpace + bottomPadding;
+
+    let dialBottomExtent = trackHeight;
+    if (dial.style === 'line' || dial.style === 'needle') {
+      dialBottomExtent = Math.max(1, dial.length ?? trackHeight) + 2;
+    } else if (dial.style === 'triangle') {
+      const sz = dial.size ?? 6;
+      dialBottomExtent = trackHeight + 2 + sz * 1.5 + 2;
+    }
+
+    const contentBottomExtent = Math.max(defaultBottomExtent, dialBottomExtent);
+    const svgHeight = trackY + contentBottomExtent;
     return { orientation, trackX, trackY, trackWidth, trackHeight, svgWidth, svgHeight, min, max };
   } else {
     const padding = 8;
