@@ -1,0 +1,32 @@
+{
+  "name": "linear-gauge-card",
+  "version": "1.0.0",
+  "description": "A customizable linear gauge card for Home Assistant",
+  "main": "dist/linear-gauge-card.js",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c --watch",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "home-assistant",
+    "lovelace",
+    "custom-card",
+    "gauge",
+    "linear-gauge"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "lit": "^3.2.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.1.0",
+    "rollup": "^4.28.0",
+    "tslib": "^2.8.0",
+    "typescript": "^5.7.0"
+  }
+}
