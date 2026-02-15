@@ -48,6 +48,9 @@ const HISTORY_MODES = [
   { value: 'both', label: 'Both' },
 ];
 
+const ENTITY_DOMAINS = ['sensor', 'input_number', 'number', 'counter'];
+const ENTITY_INPUT_WAIT_TIMEOUT_MS = 1500;
+
 type SectionKey =
   | 'general'
   | 'segments'
@@ -57,24 +60,30 @@ type SectionKey =
   | 'history'
   | 'appearance';
 
+type EntityInputMode = 'selector' | 'entity-picker' | 'textfield';
+
 export class LinearGaugeCardEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: LinearGaugeCardConfig;
   @state() private _expandedSections: Set<SectionKey> = new Set(['general']);
-  @state() private _helpersLoaded = false;
+  @state() private _entityInputMode: EntityInputMode = 'textfield';
 
-  public async connectedCallback(): Promise<void> {
+  public connectedCallback(): void {
     super.connectedCallback();
-    await this._loadElementDependencies();
+    void this._detectEntityInputMode();
   }
 
-  private async _loadElementDependencies(): Promise<void> {
-    // Multiple strategies to ensure HA elements are loaded
-    // Strategy 1: loadCardHelpers
+  private async _detectEntityInputMode(): Promise<void> {
+    const alreadyAvailableMode = this._resolveEntityInputMode();
+    if (alreadyAvailableMode !== 'textfield') {
+      this._entityInputMode = alreadyAvailableMode;
+      return;
+    }
+
+    // Try to trigger HA editor component loading.
     try {
       const helpers = await (window as any).loadCardHelpers?.();
       if (helpers) {
-        // Creating an entities card forces HA to load ha-entity-picker
         const entitiesCard = await helpers.createCardElement({
           type: 'entities',
           entities: ['sun.sun'],
@@ -87,12 +96,34 @@ export class LinearGaugeCardEditor extends LitElement {
       // Ignore errors
     }
 
-    // Strategy 2: Wait for the element to be defined
-    if (!customElements.get('ha-entity-picker')) {
-      await customElements.whenDefined('ha-entity-picker').catch(() => {});
-    }
+    await Promise.race([
+      this._waitForEntityInputDefinition(),
+      new Promise<void>((resolve) => {
+        setTimeout(resolve, ENTITY_INPUT_WAIT_TIMEOUT_MS);
+      }),
+    ]);
 
-    this._helpersLoaded = true;
+    this._entityInputMode = this._resolveEntityInputMode();
+  }
+
+  private _resolveEntityInputMode(): EntityInputMode {
+    if (customElements.get('ha-selector')) return 'selector';
+    if (customElements.get('ha-entity-picker')) return 'entity-picker';
+    return 'textfield';
+  }
+
+  private _waitForEntityInputDefinition(): Promise<void> {
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        resolve();
+      };
+
+      customElements.whenDefined('ha-selector').then(finish);
+      customElements.whenDefined('ha-entity-picker').then(finish);
+    });
   }
 
   public setConfig(config: LinearGaugeCardConfig): void {
@@ -178,26 +209,38 @@ export class LinearGaugeCardEditor extends LitElement {
   // ---- General section ----
 
   private _renderGeneral() {
-    const entityPicker = this._helpersLoaded
-      ? html`
-          <ha-entity-picker
-            .hass="${this.hass}"
-            .value="${this._config.entity ?? ''}"
-            .label="${'Entity'}"
-            .includeDomains="${['sensor', 'input_number', 'number', 'counter']}"
-            .required="${true}"
-            @value-changed="${(e: CustomEvent) => this._updateConfig('entity', e.detail.value)}"
-            allow-custom-entity
-          ></ha-entity-picker>
-        `
-      : html`
-          <ha-textfield
-            .label="${'Entity'}"
-            .value="${this._config.entity ?? ''}"
-            @input="${(e: Event) =>
-              this._updateConfig('entity', (e.target as HTMLInputElement).value)}"
-          ></ha-textfield>
-        `;
+    const entityPicker =
+      this._entityInputMode === 'selector'
+        ? html`
+            <ha-selector
+              .hass="${this.hass}"
+              .label="${'Entity'}"
+              .selector="${{ entity: { domain: ENTITY_DOMAINS } }}"
+              .value="${this._config.entity ?? ''}"
+              .required="${true}"
+              @value-changed="${(e: CustomEvent) => this._updateConfig('entity', e.detail.value)}"
+            ></ha-selector>
+          `
+        : this._entityInputMode === 'entity-picker'
+          ? html`
+              <ha-entity-picker
+                .hass="${this.hass}"
+                .value="${this._config.entity ?? ''}"
+                .label="${'Entity'}"
+                .includeDomains="${ENTITY_DOMAINS}"
+                .required="${true}"
+                @value-changed="${(e: CustomEvent) => this._updateConfig('entity', e.detail.value)}"
+                allow-custom-entity
+              ></ha-entity-picker>
+            `
+          : html`
+              <ha-textfield
+                .label="${'Entity'}"
+                .value="${this._config.entity ?? ''}"
+                @input="${(e: Event) =>
+                  this._updateConfig('entity', (e.target as HTMLInputElement).value)}"
+              ></ha-textfield>
+            `;
 
     return html`
       <div class="field">
@@ -839,7 +882,9 @@ export class LinearGaugeCardEditor extends LitElement {
       }
 
       ha-textfield,
-      ha-select {
+      ha-select,
+      ha-entity-picker,
+      ha-selector {
         width: 100%;
       }
 
