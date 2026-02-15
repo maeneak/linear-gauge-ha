@@ -360,6 +360,19 @@ function getSegmentColor(value: number, segments: SegmentConfig[], fallback: str
   return fallback;
 }
 
+function resolveDialStartValue(config: LinearGaugeCardConfig, layout: GaugeLayout): number {
+  if (!config.start_at_zero) {
+    return layout.min;
+  }
+
+  // Start from zero only when zero sits within the gauge domain.
+  if (layout.min <= 0 && layout.max >= 0) {
+    return 0;
+  }
+
+  return layout.min;
+}
+
 export function renderDial(
   value: number,
   config: LinearGaugeCardConfig,
@@ -369,6 +382,7 @@ export function renderDial(
   const display = { ...DEFAULT_DISPLAY, ...config.display };
   const endRadius = resolveEndRadius(display);
   const pos = valueToPos(value, layout);
+  const startPos = valueToPos(resolveDialStartValue(config, layout), layout);
 
   let color = dial.color;
   if (color === 'segment' && config.segments && config.segments.length > 0) {
@@ -381,7 +395,8 @@ export function renderDial(
     const dialLength = Math.max(1, dial.length ?? layout.trackHeight);
     switch (dial.style) {
       case 'bar-fill': {
-        const barWidth = pos - layout.trackX;
+        const barX = Math.min(startPos, pos);
+        const barWidth = Math.abs(pos - startPos);
         return svg`
           <defs>
             <clipPath id="${clipId}">
@@ -389,7 +404,7 @@ export function renderDial(
                 rx="${endRadius}" ry="${endRadius}" />
             </clipPath>
           </defs>
-          <rect x="${layout.trackX}" y="${layout.trackY}" width="${Math.max(0, barWidth)}" height="${layout.trackHeight}"
+          <rect x="${barX}" y="${layout.trackY}" width="${Math.max(0, barWidth)}" height="${layout.trackHeight}"
             fill="${color}" clip-path="url(#${clipId})" class="gauge-dial-bar" />
         `;
       }
@@ -438,7 +453,8 @@ export function renderDial(
     // Vertical
     switch (dial.style) {
       case 'bar-fill': {
-        const barHeight = layout.trackY + layout.trackHeight - pos;
+        const barY = Math.min(startPos, pos);
+        const barHeight = Math.abs(pos - startPos);
         return svg`
           <defs>
             <clipPath id="${clipId}">
@@ -446,7 +462,7 @@ export function renderDial(
                 rx="${endRadius}" ry="${endRadius}" />
             </clipPath>
           </defs>
-          <rect x="${layout.trackX}" y="${pos}" width="${layout.trackWidth}" height="${Math.max(0, barHeight)}"
+          <rect x="${layout.trackX}" y="${barY}" width="${layout.trackWidth}" height="${Math.max(0, barHeight)}"
             fill="${color}" clip-path="url(#${clipId})" class="gauge-dial-bar" />
         `;
       }

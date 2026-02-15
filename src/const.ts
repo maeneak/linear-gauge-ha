@@ -74,6 +74,7 @@ export const DEFAULT_CONFIG: Partial<LinearGaugeCardConfig> = {
   max: 100,
   show_name: true,
   condensed: false,
+  start_at_zero: false,
   orientation: 'horizontal',
   ticks: { ...DEFAULT_TICKS },
   dial: { ...DEFAULT_DIAL },

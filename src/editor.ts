@@ -217,6 +217,7 @@ export class LinearGaugeCardEditor extends LitElement {
   private _renderGeneral() {
     const showName = this._config.show_name !== false;
     const condensed = this._config.condensed === true;
+    const startAtZero = this._config.start_at_zero === true;
     const entityPicker =
       this._entityInputMode === 'selector'
         ? html`
@@ -286,6 +287,19 @@ export class LinearGaugeCardEditor extends LitElement {
             ></ha-switch>
           </ha-formfield>
         </div>
+      </div>
+
+      <div class="row">
+        <div class="field half">
+          <ha-formfield .label="${'Start At Zero'}">
+            <ha-switch
+              .checked="${startAtZero}"
+              @change="${(e: Event) =>
+                this._updateConfig('start_at_zero', (e.target as HTMLInputElement).checked)}"
+            ></ha-switch>
+          </ha-formfield>
+        </div>
+        <div class="half"></div>
       </div>
 
       <div class="row">

@@ -54,6 +54,30 @@ condensed: true
 show_name: false
 ```
 
+### Rudder Feedback Example
+
+```yaml
+type: custom:linear-gauge-card
+entity: sensor.rudder_feedback
+name: Rudder
+min: -45
+max: 45
+start_at_zero: true
+dial:
+  style: bar-fill
+  color: segment
+segments:
+  - from: -45
+    to: -5
+    color: "#F44336"
+  - from: -5
+    to: 5
+    color: "#9E9E9E"
+  - from: 5
+    to: 45
+    color: "#4CAF50"
+```
+
 ### Full Example
 
 ```yaml
@@ -125,6 +149,7 @@ display:
 | `name` | string / false | entity name | Card title (false to hide) |
 | `show_name` | boolean | true | Show/hide the name row without removing configured `name` |
 | `condensed` | boolean | false | Reduce card padding/spacing and tighten name/value near gauge |
+| `start_at_zero` | boolean | false | For `bar-fill`, fill from zero (when zero is within min/max) instead of from `min` |
 | `unit` | string | from entity | Override unit of measurement |
 | `min` | number | 0 | Gauge minimum value |
 | `max` | number | 100 | Gauge maximum value |

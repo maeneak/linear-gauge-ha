@@ -137,6 +137,7 @@ export interface LinearGaugeCardConfig {
   name?: string | false;
   show_name?: boolean;
   condensed?: boolean;
+  start_at_zero?: boolean;
   unit?: string;
   min?: number;
   max?: number;
