@@ -61,15 +61,15 @@ export function computeLayout(config: LinearGaugeCardConfig): GaugeLayout {
 
   if (orientation === 'horizontal') {
     const padding = condensed ? 4 : 8;
-    const topPadding = condensed ? 2 : tickSpace + labelSpace + 4;
-    const bottomTickSpace = condensed ? Math.max(0, tickSpace - 2) : tickSpace;
-    const bottomLabelSpace = condensed ? Math.max(0, labelSpace - 2) : labelSpace;
+    const topPadding = condensed ? 0 : tickSpace + labelSpace + 4;
+    const bottomTickSpace = condensed ? 0 : tickSpace;
+    const bottomLabelSpace = condensed ? 0 : labelSpace;
     const svgWidth = 300;
     const trackHeight = GAUGE_TRACK_HEIGHT;
     const trackY = topPadding;
     const trackX = padding;
     const trackWidth = svgWidth - padding * 2;
-    const bottomPadding = condensed ? 4 : 8;
+    const bottomPadding = condensed ? 2 : 8;
     const defaultBottomExtent = trackHeight + bottomTickSpace + bottomLabelSpace + bottomPadding;
 
     let dialBottomExtent = trackHeight;
@@ -271,6 +271,7 @@ export function renderMajorTicks(
   config: LinearGaugeCardConfig,
   layout: GaugeLayout,
 ): TemplateResult {
+  if (config.condensed) return svg``;
   const t = { ...DEFAULT_MAJOR_TICK, ...config.ticks?.major };
   if (t.interval <= 0) return svg``;
 
@@ -328,6 +329,7 @@ export function renderMinorTicks(
   config: LinearGaugeCardConfig,
   layout: GaugeLayout,
 ): TemplateResult {
+  if (config.condensed) return svg``;
   const major = { ...DEFAULT_MAJOR_TICK, ...config.ticks?.major };
   const minor = { ...DEFAULT_MINOR_TICK, ...config.ticks?.minor };
   if (minor.count <= 0 || major.interval <= 0) return svg``;

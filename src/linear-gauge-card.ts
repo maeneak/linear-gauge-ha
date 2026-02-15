@@ -110,12 +110,16 @@ export class LinearGaugeCard extends LitElement {
     }
 
     const condensed = this._config.condensed === true;
+    if (condensed) {
+      return 1;
+    }
+
     const dial = { ...DEFAULT_DIAL, ...this._config.dial };
     const showName = this._config.show_name !== false;
     const headerVisible =
       (showName && this._config.name !== false) || (dial.showValue && dial.valuePosition !== 'inside');
-    const headerHeight = headerVisible ? (condensed ? 20 : 28) : 0;
-    const contentPadding = condensed ? 16 : 24;
+    const headerHeight = headerVisible ? 28 : 0;
+    const contentPadding = 24;
     const layout = computeLayout(this._config);
     const estimatedPx = headerHeight + contentPadding + layout.svgHeight;
 
@@ -313,7 +317,7 @@ export class LinearGaugeCard extends LitElement {
       }
 
       .card-content.condensed {
-        padding: 8px 12px;
+        padding: 4px 12px;
       }
 
       .card-content.vertical {
@@ -345,7 +349,7 @@ export class LinearGaugeCard extends LitElement {
       }
 
       .card-content.condensed .header-row {
-        margin-bottom: 2px;
+        margin-bottom: 0;
         gap: 6px;
       }
 
