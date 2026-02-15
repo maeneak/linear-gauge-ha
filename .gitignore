@@ -19,3 +19,4 @@ ha-dev-config/tts/
 ha-dev-config/deps/
 ha-dev-config/backups/
 ha-dev-config/.HA_VERSION
+ha-dev-config/.ha_run.lock
