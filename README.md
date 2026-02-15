@@ -102,6 +102,8 @@ history:
   enabled: true
   hours: 24
   mode: both
+  showAverage: true
+  avgColor: "#9C27B0"
   minColor: "#2196F3"
   maxColor: "#F44336"
   dotColor: "#FF9800"
@@ -182,6 +184,8 @@ Array of warning range overlays:
 | `history.enabled` | boolean | false | Enable history markers |
 | `history.hours` | number | 24 | Lookback period |
 | `history.mode` | string | minmax | `minmax`, `dots`, or `both` |
+| `history.showAverage` | boolean | false | Show a marker for average value in the lookback window |
+| `history.avgColor` | string | #9C27B0 | Average marker color |
 | `history.dotColor` | string | accent-color | Dot color |
 | `history.dotSize` | number | 3 | Dot radius |
 | `history.minColor` | string | #2196F3 | Min marker color |

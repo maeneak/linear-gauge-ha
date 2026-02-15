@@ -779,6 +779,32 @@ export class LinearGaugeCardEditor extends LitElement {
               </ha-select>
             </div>
 
+            <div class="row">
+              <div class="field half">
+                <ha-formfield .label="${'Show Average'}">
+                  <ha-switch
+                    .checked="${h.showAverage}"
+                    @change="${(e: Event) =>
+                      this._updateNestedConfig(
+                        'history',
+                        'showAverage',
+                        (e.target as HTMLInputElement).checked,
+                      )}"
+                  ></ha-switch>
+                </ha-formfield>
+              </div>
+              <div class="half color-field">
+                <label>Average Color</label>
+                <input
+                  type="color"
+                  .value="${h.avgColor?.startsWith('var(') ? '#9C27B0' : h.avgColor ?? '#9C27B0'}"
+                  .disabled="${!h.showAverage}"
+                  @input="${(e: Event) =>
+                    this._updateNestedConfig('history', 'avgColor', (e.target as HTMLInputElement).value)}"
+                />
+              </div>
+            </div>
+
             ${h.mode === 'minmax' || h.mode === 'both'
               ? html`
                   <div class="row">

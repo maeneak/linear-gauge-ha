@@ -536,6 +536,26 @@ export function renderHistory(
     }
   }
 
+  if (h.showAverage && historyData.values.length > 0) {
+    const avgValue =
+      historyData.values.reduce((sum, entry) => sum + entry.value, 0) / historyData.values.length;
+    const avgPos = valueToPos(avgValue, layout);
+
+    if (layout.orientation === 'horizontal') {
+      const cy = layout.trackY + layout.trackHeight / 2;
+      parts.push(svg`
+        <circle cx="${avgPos}" cy="${cy}" r="3.2" fill="${h.avgColor}" stroke="white" stroke-width="1"
+          class="history-avg" />
+      `);
+    } else {
+      const cx = layout.trackX + layout.trackWidth / 2;
+      parts.push(svg`
+        <circle cx="${cx}" cy="${avgPos}" r="3.2" fill="${h.avgColor}" stroke="white" stroke-width="1"
+          class="history-avg" />
+      `);
+    }
+  }
+
   if (showDots && historyData.values.length > 0) {
     // Sample down to at most ~50 dots to avoid clutter
     const maxDots = 50;

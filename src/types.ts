@@ -114,6 +114,8 @@ export interface HistoryConfig {
   enabled?: boolean;
   hours?: number;
   mode?: 'minmax' | 'dots' | 'both';
+  showAverage?: boolean;
+  avgColor?: string;
   dotColor?: string;
   dotSize?: number;
   minColor?: string;
