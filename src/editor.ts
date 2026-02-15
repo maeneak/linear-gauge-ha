@@ -48,6 +48,11 @@ const HISTORY_MODES = [
   { value: 'both', label: 'Both' },
 ];
 
+const SEGMENT_FILL_MODES = [
+  { value: 'solid', label: 'Solid' },
+  { value: 'gradient', label: 'Gradient Blend' },
+];
+
 const ENTITY_DOMAINS = ['sensor', 'input_number', 'number', 'counter'];
 const ENTITY_INPUT_WAIT_TIMEOUT_MS = 1500;
 
@@ -209,6 +214,8 @@ export class LinearGaugeCardEditor extends LitElement {
   // ---- General section ----
 
   private _renderGeneral() {
+    const showName = this._config.show_name !== false;
+    const condensed = this._config.condensed === true;
     const entityPicker =
       this._entityInputMode === 'selector'
         ? html`
@@ -249,13 +256,35 @@ export class LinearGaugeCardEditor extends LitElement {
 
       <div class="field">
         <ha-textfield
-          .label="${'Name (leave blank for entity name, empty string to hide)'}"
+          .label="${'Name (leave blank for entity name)'}"
           .value="${this._config.name === false ? '' : this._config.name ?? ''}"
+          .disabled="${!showName}"
           @input="${(e: Event) => {
             const val = (e.target as HTMLInputElement).value;
             this._updateConfig('name', val === '' ? undefined : val);
           }}"
         ></ha-textfield>
+      </div>
+
+      <div class="row">
+        <div class="field half">
+          <ha-formfield .label="${'Show Name'}">
+            <ha-switch
+              .checked="${showName}"
+              @change="${(e: Event) =>
+                this._updateConfig('show_name', (e.target as HTMLInputElement).checked)}"
+            ></ha-switch>
+          </ha-formfield>
+        </div>
+        <div class="field half">
+          <ha-formfield .label="${'Condensed Mode'}">
+            <ha-switch
+              .checked="${condensed}"
+              @change="${(e: Event) =>
+                this._updateConfig('condensed', (e.target as HTMLInputElement).checked)}"
+            ></ha-switch>
+          </ha-formfield>
+        </div>
       </div>
 
       <div class="row">
@@ -312,8 +341,23 @@ export class LinearGaugeCardEditor extends LitElement {
 
   private _renderSegments() {
     const segments = this._config.segments ?? [];
+    const segmentFill = this._config.display?.segmentFill ?? 'solid';
 
     return html`
+      <div class="field">
+        <ha-select
+          .label="${'Segment Fill'}"
+          .value="${segmentFill}"
+          @selected="${(e: CustomEvent) =>
+            this._updateNestedConfig('display', 'segmentFill', (e.target as any).value)}"
+          @closed="${(e: Event) => e.stopPropagation()}"
+        >
+          ${SEGMENT_FILL_MODES.map(
+            (mode) => html`<mwc-list-item value="${mode.value}">${mode.label}</mwc-list-item>`,
+          )}
+        </ha-select>
+      </div>
+
       <div class="list-section">
         ${segments.map(
           (seg, idx) => html`
@@ -774,8 +818,39 @@ export class LinearGaugeCardEditor extends LitElement {
 
   // ---- Appearance section ----
 
+  private _getDisplayEndRadius(): number {
+    const d = { ...DEFAULT_DISPLAY, ...this._config.display };
+    const radius = d.endRadius ?? d.borderRadius ?? 0;
+    if (!Number.isFinite(radius)) {
+      return 0;
+    }
+    return Math.max(0, radius);
+  }
+
+  private _setDisplayRoundedEnds(enabled: boolean): void {
+    const display = { ...(this._config.display ?? {}) };
+    display.roundedEnds = enabled;
+    this._updateConfig('display', display);
+  }
+
+  private _setDisplayEndRadius(inputValue: string): void {
+    const parsed = parseFloat(inputValue);
+    if (!Number.isFinite(parsed)) {
+      return;
+    }
+
+    const radius = Math.max(0, parsed);
+    const display = { ...(this._config.display ?? {}) };
+    // Keep legacy key synchronized for backward compatibility.
+    display.endRadius = radius;
+    display.borderRadius = radius;
+    this._updateConfig('display', display);
+  }
+
   private _renderAppearance() {
     const d = { ...DEFAULT_DISPLAY, ...this._config.display };
+    const roundedEnds = d.roundedEnds !== false;
+    const endRadius = this._getDisplayEndRadius();
 
     return html`
       <div class="row">
@@ -788,17 +863,26 @@ export class LinearGaugeCardEditor extends LitElement {
               this._updateNestedConfig('display', 'trackColor', (e.target as HTMLInputElement).value)}"
           />
         </div>
-        <ha-textfield
-          class="half"
-          .label="${'Border Radius'}"
-          .value="${String(d.borderRadius)}"
-          type="number"
-          @input="${(e: Event) =>
-            this._updateNestedConfig('display', 'borderRadius', parseFloat((e.target as HTMLInputElement).value) || 4)}"
-        ></ha-textfield>
+        <div class="field half">
+          <ha-formfield .label="${'Rounded Ends'}">
+            <ha-switch
+              .checked="${roundedEnds}"
+              @change="${(e: Event) =>
+                this._setDisplayRoundedEnds((e.target as HTMLInputElement).checked)}"
+            ></ha-switch>
+          </ha-formfield>
+        </div>
       </div>
 
       <div class="row">
+        <ha-textfield
+          class="half"
+          .label="${'End Radius (px)'}"
+          .value="${String(endRadius)}"
+          .disabled="${!roundedEnds}"
+          type="number"
+          @input="${(e: Event) => this._setDisplayEndRadius((e.target as HTMLInputElement).value)}"
+        ></ha-textfield>
         <ha-textfield
           class="half"
           .label="${'Padding'}"
@@ -807,15 +891,19 @@ export class LinearGaugeCardEditor extends LitElement {
           @input="${(e: Event) =>
             this._updateNestedConfig('display', 'padding', parseFloat((e.target as HTMLInputElement).value) || 16)}"
         ></ha-textfield>
+      </div>
+
+      <div class="row">
         <div class="half color-field">
           <label>Background</label>
           <input
             type="color"
             .value="${d.backgroundColor?.startsWith('var(') || d.backgroundColor === 'none' ? '#000000' : d.backgroundColor ?? '#000000'}"
             @input="${(e: Event) =>
-              this._updateNestedConfig('display', 'backgroundColor', (e.target as HTMLInputElement).value)}"
+            this._updateNestedConfig('display', 'backgroundColor', (e.target as HTMLInputElement).value)}"
           />
         </div>
+        <div class="half"></div>
       </div>
     `;
   }

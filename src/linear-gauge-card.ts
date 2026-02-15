@@ -92,12 +92,18 @@ export class LinearGaugeCard extends LitElement {
     if (this._config?.orientation === 'vertical') {
       return 6;
     }
+    if (this._config?.condensed) {
+      return 1;
+    }
     return this._config?.height ? Math.ceil(this._config.height / 50) : 2;
   }
 
   public getGridOptions(): { rows: number; columns: number; min_rows: number; min_columns: number } {
     if (this._config?.orientation === 'vertical') {
       return { rows: 6, columns: 3, min_rows: 3, min_columns: 3 };
+    }
+    if (this._config?.condensed) {
+      return { rows: 1, columns: 6, min_rows: 1, min_columns: 3 };
     }
     return { rows: 2, columns: 6, min_rows: 1, min_columns: 3 };
   }
@@ -154,21 +160,32 @@ export class LinearGaugeCard extends LitElement {
     const value = parseFloat(stateObj.state);
     const numericValue = isNaN(value) ? null : value;
 
+    const showName = this._config.show_name !== false;
     const name =
-      this._config.name === false
-        ? null
-        : this._config.name ?? stateObj.attributes.friendly_name ?? entityId;
+      showName && this._config.name !== false
+        ? this._config.name ?? stateObj.attributes.friendly_name ?? entityId
+        : null;
     const unit = this._config.unit ?? (stateObj.attributes.unit_of_measurement as string) ?? '';
 
     const layout = computeLayout(this._config);
     const dial = { ...DEFAULT_DIAL, ...this._config.dial };
+    const condensed = this._config.condensed === true;
+    const headerVisible = name !== null || (dial.showValue && dial.valuePosition !== 'inside');
+    const contentClasses = [
+      'card-content',
+      this._config.orientation === 'vertical' ? 'vertical' : 'horizontal',
+      condensed ? 'condensed' : '',
+      name === null ? 'name-hidden' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
 
     const displayValue = numericValue !== null ? this._formatValue(numericValue) : stateObj.state;
 
     return html`
       <ha-card @click="${this._handleAction}" @ha-click="${this._handleAction}">
-        <div class="card-content ${this._config.orientation === 'vertical' ? 'vertical' : 'horizontal'}">
-          ${name !== null || dial.showValue
+        <div class="${contentClasses}">
+          ${headerVisible
             ? html`
                 <div class="header-row">
                   ${name !== null ? html`<div class="name">${name}</div>` : ''}
@@ -272,11 +289,19 @@ export class LinearGaugeCard extends LitElement {
         padding: 12px 16px;
       }
 
+      .card-content.condensed {
+        padding: 8px 12px;
+      }
+
       .card-content.vertical {
         display: flex;
         flex-direction: row;
         align-items: stretch;
         gap: 12px;
+      }
+
+      .card-content.vertical.condensed {
+        gap: 8px;
       }
 
       .card-content.vertical .header-row {
@@ -296,6 +321,15 @@ export class LinearGaugeCard extends LitElement {
         gap: 8px;
       }
 
+      .card-content.condensed .header-row {
+        margin-bottom: 2px;
+        gap: 6px;
+      }
+
+      .card-content.condensed.name-hidden .header-row {
+        margin-bottom: 0;
+      }
+
       .name {
         font-size: 14px;
         font-weight: 500;
@@ -307,6 +341,11 @@ export class LinearGaugeCard extends LitElement {
         min-width: 0;
       }
 
+      .card-content.condensed .name {
+        font-size: 13px;
+        line-height: 1.1;
+      }
+
       .value-badge {
         font-weight: 600;
         white-space: nowrap;
@@ -315,6 +354,12 @@ export class LinearGaugeCard extends LitElement {
         background: var(--card-background-color, var(--ha-card-background, rgba(127,127,127,0.1)));
         border: 1px solid var(--divider-color, rgba(127,127,127,0.2));
         flex-shrink: 0;
+      }
+
+      .card-content.condensed .value-badge {
+        padding: 2px 8px;
+        border-radius: 10px;
+        line-height: 1.1;
       }
 
       .gauge-container {

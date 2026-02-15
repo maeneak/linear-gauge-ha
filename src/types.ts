@@ -122,6 +122,9 @@ export interface HistoryConfig {
 export interface DisplayConfig {
   backgroundColor?: string;
   trackColor?: string;
+  segmentFill?: 'solid' | 'gradient';
+  roundedEnds?: boolean;
+  endRadius?: number;
   borderRadius?: number;
   padding?: number;
 }
@@ -130,6 +133,8 @@ export interface LinearGaugeCardConfig {
   type: string;
   entity: string;
   name?: string | false;
+  show_name?: boolean;
+  condensed?: boolean;
   unit?: string;
   min?: number;
   max?: number;

@@ -19,6 +19,20 @@ import {
   GAUGE_TRACK_HEIGHT,
 } from './const';
 
+function resolveEndRadius(display: DisplayConfig): number {
+  const d = { ...DEFAULT_DISPLAY, ...display };
+  if (d.roundedEnds === false) {
+    return 0;
+  }
+
+  const configuredRadius = d.endRadius ?? d.borderRadius;
+  if (!Number.isFinite(configuredRadius)) {
+    return 0;
+  }
+
+  return Math.max(0, configuredRadius);
+}
+
 // ---- Layout helpers ----
 
 export interface GaugeLayout {
@@ -79,14 +93,15 @@ export function valueToPos(value: number, layout: GaugeLayout): number {
 
 export function renderTrack(layout: GaugeLayout, display: DisplayConfig): TemplateResult {
   const d = { ...DEFAULT_DISPLAY, ...display };
+  const endRadius = resolveEndRadius(d);
   return svg`
     <rect
       x="${layout.trackX}"
       y="${layout.trackY}"
       width="${layout.orientation === 'horizontal' ? layout.trackWidth : layout.trackHeight}"
       height="${layout.orientation === 'horizontal' ? layout.trackHeight : layout.trackWidth}"
-      rx="${d.borderRadius}"
-      ry="${d.borderRadius}"
+      rx="${endRadius}"
+      ry="${endRadius}"
       fill="${d.trackColor}"
       class="gauge-track"
     />
@@ -102,33 +117,58 @@ export function renderSegments(
 ): TemplateResult {
   if (!segments || segments.length === 0) return svg``;
   const d = { ...DEFAULT_DISPLAY, ...display };
+  const endRadius = resolveEndRadius(d);
   const clipId = `seg-clip-${Math.random().toString(36).slice(2, 8)}`;
+  const useGradient = d.segmentFill === 'gradient';
 
-  const segRects = segments.map((seg) => {
+  const gradientDefs: TemplateResult[] = [];
+  const segRects = segments.map((seg, idx) => {
     const start = valueToPos(Math.max(seg.from, layout.min), layout);
     const end = valueToPos(Math.min(seg.to, layout.max), layout);
+    const nextSegColor = segments[idx + 1]?.color ?? seg.color;
 
     if (layout.orientation === 'horizontal') {
       const x = Math.min(start, end);
       const w = Math.abs(end - start);
-      return svg`<rect x="${x}" y="${layout.trackY}" width="${w}" height="${layout.trackHeight}" fill="${seg.color}" />`;
+      if (!useGradient) {
+        return svg`<rect x="${x}" y="${layout.trackY}" width="${w}" height="${layout.trackHeight}" fill="${seg.color}" />`;
+      }
+      const gradientId = `seg-grad-h-${idx}-${Math.random().toString(36).slice(2, 8)}`;
+      gradientDefs.push(svg`
+        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="${seg.color}" />
+          <stop offset="100%" stop-color="${nextSegColor}" />
+        </linearGradient>
+      `);
+      return svg`<rect x="${x}" y="${layout.trackY}" width="${w}" height="${layout.trackHeight}" fill="url(#${gradientId})" />`;
     } else {
       const y = Math.min(start, end);
       const h = Math.abs(end - start);
-      return svg`<rect x="${layout.trackX}" y="${y}" width="${layout.trackWidth}" height="${h}" fill="${seg.color}" />`;
+      if (!useGradient) {
+        return svg`<rect x="${layout.trackX}" y="${y}" width="${layout.trackWidth}" height="${h}" fill="${seg.color}" />`;
+      }
+      const gradientId = `seg-grad-v-${idx}-${Math.random().toString(36).slice(2, 8)}`;
+      gradientDefs.push(svg`
+        <linearGradient id="${gradientId}" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" stop-color="${seg.color}" />
+          <stop offset="100%" stop-color="${nextSegColor}" />
+        </linearGradient>
+      `);
+      return svg`<rect x="${layout.trackX}" y="${y}" width="${layout.trackWidth}" height="${h}" fill="url(#${gradientId})" />`;
     }
   });
 
   return svg`
     <defs>
+      ${gradientDefs}
       <clipPath id="${clipId}">
         <rect
           x="${layout.trackX}"
           y="${layout.trackY}"
           width="${layout.orientation === 'horizontal' ? layout.trackWidth : layout.trackWidth}"
           height="${layout.orientation === 'horizontal' ? layout.trackHeight : layout.trackHeight}"
-          rx="${d.borderRadius}"
-          ry="${d.borderRadius}"
+          rx="${endRadius}"
+          ry="${endRadius}"
         />
       </clipPath>
     </defs>
@@ -147,6 +187,7 @@ export function renderWarnings(
 ): TemplateResult {
   if (!warnings || warnings.length === 0) return svg``;
   const d = { ...DEFAULT_DISPLAY, ...display };
+  const endRadius = resolveEndRadius(d);
   const clipId = `warn-clip-${Math.random().toString(36).slice(2, 8)}`;
 
   const patterns: TemplateResult[] = [];
@@ -197,7 +238,7 @@ export function renderWarnings(
           x="${layout.trackX}" y="${layout.trackY}"
           width="${layout.orientation === 'horizontal' ? layout.trackWidth : layout.trackWidth}"
           height="${layout.orientation === 'horizontal' ? layout.trackHeight : layout.trackHeight}"
-          rx="${d.borderRadius}" ry="${d.borderRadius}"
+          rx="${endRadius}" ry="${endRadius}"
         />
       </clipPath>
     </defs>
@@ -321,6 +362,7 @@ export function renderDial(
 ): TemplateResult {
   const dial = { ...DEFAULT_DIAL, ...config.dial };
   const display = { ...DEFAULT_DISPLAY, ...config.display };
+  const endRadius = resolveEndRadius(display);
   const pos = valueToPos(value, layout);
 
   let color = dial.color;
@@ -338,7 +380,7 @@ export function renderDial(
           <defs>
             <clipPath id="${clipId}">
               <rect x="${layout.trackX}" y="${layout.trackY}" width="${layout.trackWidth}" height="${layout.trackHeight}"
-                rx="${display.borderRadius}" ry="${display.borderRadius}" />
+                rx="${endRadius}" ry="${endRadius}" />
             </clipPath>
           </defs>
           <rect x="${layout.trackX}" y="${layout.trackY}" width="${Math.max(0, barWidth)}" height="${layout.trackHeight}"
@@ -390,7 +432,7 @@ export function renderDial(
           <defs>
             <clipPath id="${clipId}">
               <rect x="${layout.trackX}" y="${layout.trackY}" width="${layout.trackWidth}" height="${layout.trackHeight}"
-                rx="${display.borderRadius}" ry="${display.borderRadius}" />
+                rx="${endRadius}" ry="${endRadius}" />
             </clipPath>
           </defs>
           <rect x="${layout.trackX}" y="${pos}" width="${layout.trackWidth}" height="${Math.max(0, barHeight)}"

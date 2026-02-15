@@ -45,6 +45,15 @@ type: custom:linear-gauge-card
 entity: sensor.temperature
 ```
 
+### Condensed Example
+
+```yaml
+type: custom:linear-gauge-card
+entity: sensor.temperature
+condensed: true
+show_name: false
+```
+
 ### Full Example
 
 ```yaml
@@ -98,7 +107,9 @@ history:
   dotSize: 3
 display:
   trackColor: "rgba(127,127,127,0.3)"
-  borderRadius: 4
+  segmentFill: solid
+  roundedEnds: true
+  endRadius: 4
   padding: 16
 ```
 
@@ -110,6 +121,8 @@ display:
 |--------|------|---------|-------------|
 | `entity` | string | **required** | Entity ID |
 | `name` | string / false | entity name | Card title (false to hide) |
+| `show_name` | boolean | true | Show/hide the name row without removing configured `name` |
+| `condensed` | boolean | false | Reduce card padding/spacing and tighten name/value near gauge |
 | `unit` | string | from entity | Override unit of measurement |
 | `min` | number | 0 | Gauge minimum value |
 | `max` | number | 100 | Gauge maximum value |
@@ -177,7 +190,10 @@ Array of warning range overlays:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `display.trackColor` | string | divider-color | Gauge track background |
-| `display.borderRadius` | number | 4 | Track corner radius |
+| `display.segmentFill` | string | solid | Segment rendering mode: `solid` or `gradient` |
+| `display.roundedEnds` | boolean | true | Enable rounded gauge ends |
+| `display.endRadius` | number | 4 | Gauge end radius in px (used when `roundedEnds: true`) |
+| `display.borderRadius` | number | 4 | Legacy alias for `display.endRadius` |
 | `display.padding` | number | 16 | Card inner padding |
 
 ### Actions

@@ -60,6 +60,9 @@ export const DEFAULT_HISTORY: Required<HistoryConfig> = {
 export const DEFAULT_DISPLAY: Required<DisplayConfig> = {
   backgroundColor: 'none',
   trackColor: 'var(--divider-color, rgba(127,127,127,0.3))',
+  segmentFill: 'solid',
+  roundedEnds: true,
+  endRadius: 4,
   borderRadius: 4,
   padding: 16,
 };
@@ -67,6 +70,8 @@ export const DEFAULT_DISPLAY: Required<DisplayConfig> = {
 export const DEFAULT_CONFIG: Partial<LinearGaugeCardConfig> = {
   min: 0,
   max: 100,
+  show_name: true,
+  condensed: false,
   orientation: 'horizontal',
   ticks: { ...DEFAULT_TICKS },
   dial: { ...DEFAULT_DIAL },
