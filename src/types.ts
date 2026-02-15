@@ -113,8 +113,7 @@ export interface DialConfig {
 export interface HistoryConfig {
   enabled?: boolean;
   hours?: number;
-  mode?: 'minmax' | 'dots' | 'both';
-  showAverage?: boolean;
+  mode?: 'minmax' | 'dots' | 'both' | 'average';
   avgColor?: string;
   dotColor?: string;
   dotSize?: number;

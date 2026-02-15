@@ -52,7 +52,6 @@ export const DEFAULT_HISTORY: Required<HistoryConfig> = {
   enabled: false,
   hours: 24,
   mode: 'minmax',
-  showAverage: false,
   avgColor: '#9C27B0',
   dotColor: 'var(--accent-color)',
   dotSize: 3,

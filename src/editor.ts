@@ -46,6 +46,7 @@ const HISTORY_MODES = [
   { value: 'minmax', label: 'Min/Max Markers' },
   { value: 'dots', label: 'History Dots' },
   { value: 'both', label: 'Both' },
+  { value: 'average', label: 'Average Marker' },
 ];
 
 const SEGMENT_FILL_MODES = [
@@ -779,31 +780,22 @@ export class LinearGaugeCardEditor extends LitElement {
               </ha-select>
             </div>
 
-            <div class="row">
-              <div class="field half">
-                <ha-formfield .label="${'Show Average'}">
-                  <ha-switch
-                    .checked="${h.showAverage}"
-                    @change="${(e: Event) =>
-                      this._updateNestedConfig(
-                        'history',
-                        'showAverage',
-                        (e.target as HTMLInputElement).checked,
-                      )}"
-                  ></ha-switch>
-                </ha-formfield>
-              </div>
-              <div class="half color-field">
-                <label>Average Color</label>
-                <input
-                  type="color"
-                  .value="${h.avgColor?.startsWith('var(') ? '#9C27B0' : h.avgColor ?? '#9C27B0'}"
-                  .disabled="${!h.showAverage}"
-                  @input="${(e: Event) =>
-                    this._updateNestedConfig('history', 'avgColor', (e.target as HTMLInputElement).value)}"
-                />
-              </div>
-            </div>
+            ${h.mode === 'average'
+              ? html`
+                  <div class="row">
+                    <div class="half color-field">
+                      <label>Average Color</label>
+                      <input
+                        type="color"
+                        .value="${h.avgColor?.startsWith('var(') ? '#9C27B0' : h.avgColor ?? '#9C27B0'}"
+                        @input="${(e: Event) =>
+                          this._updateNestedConfig('history', 'avgColor', (e.target as HTMLInputElement).value)}"
+                      />
+                    </div>
+                    <div class="half"></div>
+                  </div>
+                `
+              : ''}
 
             ${h.mode === 'minmax' || h.mode === 'both'
               ? html`

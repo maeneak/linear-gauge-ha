@@ -502,6 +502,7 @@ export function renderHistory(
 
   const showMinMax = h.mode === 'minmax' || h.mode === 'both';
   const showDots = h.mode === 'dots' || h.mode === 'both';
+  const showAverage = h.mode === 'average';
 
   if (showMinMax) {
     const minPos = valueToPos(historyData.min, layout);
@@ -536,23 +537,31 @@ export function renderHistory(
     }
   }
 
-  if (h.showAverage && historyData.values.length > 0) {
-    const avgValue =
-      historyData.values.reduce((sum, entry) => sum + entry.value, 0) / historyData.values.length;
-    const avgPos = valueToPos(avgValue, layout);
+  if (showAverage && historyData.values.length > 0) {
+    const averageValues = historyData.values.filter(
+      (entry) => Number.isFinite(entry.value) && entry.value !== 0,
+    );
 
-    if (layout.orientation === 'horizontal') {
-      const cy = layout.trackY + layout.trackHeight / 2;
-      parts.push(svg`
-        <circle cx="${avgPos}" cy="${cy}" r="3.2" fill="${h.avgColor}" stroke="white" stroke-width="1"
-          class="history-avg" />
-      `);
-    } else {
-      const cx = layout.trackX + layout.trackWidth / 2;
-      parts.push(svg`
-        <circle cx="${cx}" cy="${avgPos}" r="3.2" fill="${h.avgColor}" stroke="white" stroke-width="1"
-          class="history-avg" />
-      `);
+    if (averageValues.length > 0) {
+      const avgValue =
+        averageValues.reduce((sum, entry) => sum + entry.value, 0) / averageValues.length;
+      const avgPos = valueToPos(avgValue, layout);
+
+      if (layout.orientation === 'horizontal') {
+        const markerY = layout.trackY - 2;
+        const sz = 3;
+        parts.push(svg`
+          <polygon points="${avgPos - sz},${markerY - sz * 1.8} ${avgPos + sz},${markerY - sz * 1.8} ${avgPos},${markerY}"
+            fill="${h.avgColor}" class="history-avg" />
+        `);
+      } else {
+        const markerX = layout.trackX + layout.trackWidth + 2;
+        const sz = 3;
+        parts.push(svg`
+          <polygon points="${markerX},${avgPos} ${markerX + sz * 1.8},${avgPos - sz} ${markerX + sz * 1.8},${avgPos + sz}"
+            fill="${h.avgColor}" class="history-avg" />
+        `);
+      }
     }
   }
 
