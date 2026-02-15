@@ -1,6 +1,6 @@
 import { HomeAssistant, HistoryData } from './types';
 
-interface HistoryCache {
+export interface HistoryCache {
   entityId: string;
   hours: number;
   timestamp: number;
@@ -8,21 +8,21 @@ interface HistoryCache {
 }
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-let historyCache: HistoryCache | null = null;
 
 export async function fetchHistory(
   hass: HomeAssistant,
   entityId: string,
   hours: number,
+  cache: { current: HistoryCache | null },
 ): Promise<HistoryData | null> {
-  // Check cache
+  // Check instance-level cache
   if (
-    historyCache &&
-    historyCache.entityId === entityId &&
-    historyCache.hours === hours &&
-    Date.now() - historyCache.timestamp < CACHE_TTL
+    cache.current &&
+    cache.current.entityId === entityId &&
+    cache.current.hours === hours &&
+    Date.now() - cache.current.timestamp < CACHE_TTL
   ) {
-    return historyCache.data;
+    return cache.current.data;
   }
 
   try {
@@ -59,7 +59,7 @@ export async function fetchHistory(
 
     const data: HistoryData = { min, max, values };
 
-    historyCache = {
+    cache.current = {
       entityId,
       hours,
       timestamp: Date.now(),
@@ -71,8 +71,4 @@ export async function fetchHistory(
     console.warn('Linear Gauge Card: Failed to fetch history', err);
     return null;
   }
-}
-
-export function invalidateHistoryCache(): void {
-  historyCache = null;
 }

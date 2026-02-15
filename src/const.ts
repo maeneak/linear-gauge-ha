@@ -100,8 +100,4 @@ export const PRESET_COLORS = [
 
 // SVG layout constants
 export const GAUGE_TRACK_HEIGHT = 12;
-export const GAUGE_LABEL_MARGIN = 4;
 export const SVG_H_VIEWBOX_WIDTH = 300;
-export const SVG_H_VIEWBOX_HEIGHT = 60;
-export const SVG_V_VIEWBOX_WIDTH = 80;
-export const SVG_V_VIEWBOX_HEIGHT = 300;

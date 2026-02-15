@@ -8,6 +8,7 @@ export interface HomeAssistant {
   config: HassConfig;
   callApi: <T>(method: string, path: string, parameters?: Record<string, unknown>) => Promise<T>;
   callWS: <T>(msg: Record<string, unknown>) => Promise<T>;
+  callService: (domain: string, service: string, data?: Record<string, unknown>) => Promise<void>;
   connection: {
     subscribeMessage: <T>(callback: (msg: T) => void, msg: Record<string, unknown>) => Promise<() => void>;
   };

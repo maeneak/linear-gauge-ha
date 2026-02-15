@@ -2,5 +2,6 @@
   "name": "Linear Gauge Card",
   "render_readme": true,
   "filename": "linear-gauge-card.js",
-  "content_in_root": false
+  "content_in_root": false,
+  "homeassistant": "2024.1.0"
 }

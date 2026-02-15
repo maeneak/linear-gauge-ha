@@ -17,6 +17,7 @@ import {
   DEFAULT_HISTORY,
   DEFAULT_DISPLAY,
   GAUGE_TRACK_HEIGHT,
+  SVG_H_VIEWBOX_WIDTH,
 } from './const';
 
 function resolveEndRadius(display: DisplayConfig): number {
@@ -64,7 +65,7 @@ export function computeLayout(config: LinearGaugeCardConfig): GaugeLayout {
     const topPadding = condensed ? 0 : tickSpace + labelSpace + 4;
     const bottomTickSpace = condensed ? 6 : tickSpace;
     const bottomLabelSpace = condensed ? (showLabels ? 12 : 0) : labelSpace;
-    const svgWidth = 300;
+    const svgWidth = SVG_H_VIEWBOX_WIDTH;
     const trackHeight = condensed ? 8 : GAUGE_TRACK_HEIGHT;
     const trackY = topPadding;
     const trackX = padding;
@@ -131,11 +132,12 @@ export function renderSegments(
   segments: SegmentConfig[],
   layout: GaugeLayout,
   display: DisplayConfig,
+  instanceId: string,
 ): TemplateResult {
   if (!segments || segments.length === 0) return svg``;
   const d = { ...DEFAULT_DISPLAY, ...display };
   const endRadius = resolveEndRadius(d);
-  const clipId = `seg-clip-${Math.random().toString(36).slice(2, 8)}`;
+  const clipId = `${instanceId}-seg-clip`;
   const useGradient = d.segmentFill === 'gradient';
 
   const gradientDefs: TemplateResult[] = [];
@@ -150,7 +152,7 @@ export function renderSegments(
       if (!useGradient) {
         return svg`<rect x="${x}" y="${layout.trackY}" width="${w}" height="${layout.trackHeight}" fill="${seg.color}" />`;
       }
-      const gradientId = `seg-grad-h-${idx}-${Math.random().toString(36).slice(2, 8)}`;
+      const gradientId = `${instanceId}-seg-grad-h-${idx}`;
       gradientDefs.push(svg`
         <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stop-color="${seg.color}" />
@@ -164,7 +166,7 @@ export function renderSegments(
       if (!useGradient) {
         return svg`<rect x="${layout.trackX}" y="${y}" width="${layout.trackWidth}" height="${h}" fill="${seg.color}" />`;
       }
-      const gradientId = `seg-grad-v-${idx}-${Math.random().toString(36).slice(2, 8)}`;
+      const gradientId = `${instanceId}-seg-grad-v-${idx}`;
       gradientDefs.push(svg`
         <linearGradient id="${gradientId}" x1="0%" y1="100%" x2="0%" y2="0%">
           <stop offset="0%" stop-color="${seg.color}" />
@@ -201,18 +203,19 @@ export function renderWarnings(
   warnings: WarningConfig[],
   layout: GaugeLayout,
   display: DisplayConfig,
+  instanceId: string,
 ): TemplateResult {
   if (!warnings || warnings.length === 0) return svg``;
   const d = { ...DEFAULT_DISPLAY, ...display };
   const endRadius = resolveEndRadius(d);
-  const clipId = `warn-clip-${Math.random().toString(36).slice(2, 8)}`;
+  const clipId = `${instanceId}-warn-clip`;
 
   const patterns: TemplateResult[] = [];
   const warnRects = warnings.map((warn, i) => {
     const start = valueToPos(Math.max(warn.from, layout.min), layout);
     const end = valueToPos(Math.min(warn.to, layout.max), layout);
     const warnStyle = warn.style ?? 'fill';
-    const patternId = `hatch-${i}-${Math.random().toString(36).slice(2, 8)}`;
+    const patternId = `${instanceId}-hatch-${i}`;
 
     let fill = warn.color;
     let stroke = 'none';
@@ -398,6 +401,7 @@ export function renderDial(
   value: number,
   config: LinearGaugeCardConfig,
   layout: GaugeLayout,
+  instanceId: string,
 ): TemplateResult {
   const dial = { ...DEFAULT_DIAL, ...config.dial };
   const display = { ...DEFAULT_DISPLAY, ...config.display };
@@ -410,7 +414,7 @@ export function renderDial(
     color = getSegmentColor(value, config.segments, 'var(--primary-color)');
   }
 
-  const clipId = `dial-clip-${Math.random().toString(36).slice(2, 8)}`;
+  const clipId = `${instanceId}-dial-clip`;
 
   if (layout.orientation === 'horizontal') {
     const dialLength = Math.max(1, dial.length ?? layout.trackHeight);

@@ -1,5 +1,6 @@
 import { LitElement, html, css, PropertyValues, nothing, CSSResultGroup } from 'lit';
-import { property, state } from 'lit/decorators.js';
+import { state } from 'lit/decorators.js';
+import { actionHandler } from './action-handler';
 import {
   HomeAssistant,
   HassEntity,
@@ -27,7 +28,7 @@ import {
   renderDial,
   renderHistory,
 } from './gauge-renderer';
-import { fetchHistory, invalidateHistoryCache } from './history';
+import { fetchHistory, HistoryCache } from './history';
 
 // Log version
 console.info(
@@ -47,12 +48,35 @@ console.info(
 });
 
 export class LinearGaugeCard extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
+  private static _instanceCounter = 0;
+
+  private _hass?: HomeAssistant;
   @state() private _config!: LinearGaugeCardConfig;
   @state() private _historyData: HistoryData | null = null;
 
   private _historyFetchTimer?: ReturnType<typeof setTimeout>;
-  private _lastEntityId?: string;
+  private _historyCache: { current: HistoryCache | null } = { current: null };
+  private _cachedLayout?: GaugeLayout;
+  private _instanceId = `lg-${LinearGaugeCard._instanceCounter++}`;
+
+  public get hass(): HomeAssistant {
+    return this._hass!;
+  }
+
+  public set hass(hass: HomeAssistant) {
+    const oldHass = this._hass;
+    this._hass = hass;
+
+    if (!oldHass || !this._config) {
+      this.requestUpdate('hass', oldHass);
+      return;
+    }
+
+    const entityId = this._config.entity;
+    if (oldHass.states[entityId] !== hass.states[entityId]) {
+      this.requestUpdate('hass', oldHass);
+    }
+  }
 
   // ---- Lovelace Card API ----
 
@@ -79,6 +103,7 @@ export class LinearGaugeCard extends LitElement {
     if (!config.entity) {
       throw new Error('Please define an entity');
     }
+    const oldEntity = this._config?.entity;
     this._config = {
       ...DEFAULT_CONFIG,
       ...config,
@@ -86,6 +111,12 @@ export class LinearGaugeCard extends LitElement {
       display: { ...DEFAULT_DISPLAY, ...config.display },
       history: { ...DEFAULT_HISTORY, ...config.history },
     } as LinearGaugeCardConfig;
+    this._cachedLayout = computeLayout(this._config);
+
+    if (oldEntity && oldEntity !== this._config.entity) {
+      this._historyData = null;
+      this._historyCache.current = null;
+    }
   }
 
   public getCardSize(): number {
@@ -96,7 +127,10 @@ export class LinearGaugeCard extends LitElement {
   }
 
   public getGridOptions(): { rows: number; columns: number; min_rows: number; min_columns: number } {
-    if (this._config?.orientation === 'vertical') {
+    if (!this._config) {
+      return { rows: 2, columns: 6, min_rows: 1, min_columns: 3 };
+    }
+    if (this._config.orientation === 'vertical') {
       return { rows: 6, columns: 3, min_rows: 3, min_columns: 3 };
     }
     const rows = this._estimateHorizontalRows();
@@ -120,7 +154,7 @@ export class LinearGaugeCard extends LitElement {
       (showName && this._config.name !== false) || (dial.showValue && dial.valuePosition !== 'inside');
     const headerHeight = headerVisible ? 28 : 0;
     const contentPadding = 24;
-    const layout = computeLayout(this._config);
+    const layout = this._cachedLayout ?? computeLayout(this._config);
     const estimatedPx = headerHeight + contentPadding + layout.svgHeight;
 
     return Math.max(1, Math.ceil(estimatedPx / 50));
@@ -145,7 +179,7 @@ export class LinearGaugeCard extends LitElement {
       this._historyFetchTimer = undefined;
       if (!this.hass || !this._config) return;
       const histCfg = { ...DEFAULT_HISTORY, ...this._config.history };
-      const data = await fetchHistory(this.hass, this._config.entity, histCfg.hours);
+      const data = await fetchHistory(this.hass, this._config.entity, histCfg.hours, this._historyCache);
       if (data) {
         this._historyData = data;
       }
@@ -175,9 +209,6 @@ export class LinearGaugeCard extends LitElement {
       `;
     }
 
-    const value = parseFloat(stateObj.state);
-    const numericValue = isNaN(value) ? null : value;
-
     const showName = this._config.show_name !== false;
     const name =
       showName && this._config.name !== false
@@ -185,7 +216,7 @@ export class LinearGaugeCard extends LitElement {
         : null;
     const unit = this._config.unit ?? (stateObj.attributes.unit_of_measurement as string) ?? '';
 
-    const layout = computeLayout(this._config);
+    const layout = this._cachedLayout ?? computeLayout(this._config);
     const dial = { ...DEFAULT_DIAL, ...this._config.dial };
     const condensed = this._config.condensed === true;
     const headerVisible = name !== null || (dial.showValue && dial.valuePosition !== 'inside');
@@ -198,18 +229,66 @@ export class LinearGaugeCard extends LitElement {
       .filter(Boolean)
       .join(' ');
 
-    const displayValue = numericValue !== null ? this._formatValue(numericValue) : stateObj.state;
+    const stateValue = stateObj.state;
+    const isUnavailable = stateValue === 'unavailable' || stateValue === 'unknown';
+
+    if (isUnavailable) {
+      return html`
+        <ha-card
+          ${actionHandler({
+            hasHold: !!this._config.hold_action,
+            hasDoubleClick: !!this._config.double_tap_action,
+          })}
+          @action="${this._handleAction}"
+        >
+          <div class="${contentClasses}">
+            ${headerVisible
+              ? html`
+                  <div class="header-row">
+                    ${name !== null ? html`<div class="name">${name}</div>` : ''}
+                    <div class="value-badge unavailable">
+                      ${stateValue === 'unavailable' ? 'Unavailable' : 'Unknown'}
+                    </div>
+                  </div>
+                `
+              : ''}
+            <div class="gauge-container">
+              <svg
+                viewBox="0 0 ${layout.svgWidth} ${layout.svgHeight}"
+                preserveAspectRatio="${condensed ? 'none' : 'xMidYMid meet'}"
+                width="100%"
+                height="${condensed ? layout.svgHeight : nothing}"
+                class="gauge-svg unavailable-gauge"
+              >
+                ${renderTrack(layout, this._config.display ?? {})}
+              </svg>
+            </div>
+          </div>
+        </ha-card>
+      `;
+    }
+
+    const value = parseFloat(stateValue);
+    const numericValue = isNaN(value) ? null : value;
+    const displayValue = numericValue !== null ? this._formatValue(numericValue) : stateValue;
+    const id = this._instanceId;
     const renderDialBeforeTicks =
       numericValue !== null && dial.style === 'bar-fill'
-        ? renderDial(numericValue, this._config, layout)
+        ? renderDial(numericValue, this._config, layout, id)
         : '';
     const renderDialAfterTicks =
       numericValue !== null && dial.style !== 'bar-fill'
-        ? renderDial(numericValue, this._config, layout)
+        ? renderDial(numericValue, this._config, layout, id)
         : '';
 
     return html`
-      <ha-card @click="${this._handleAction}" @ha-click="${this._handleAction}">
+      <ha-card
+        ${actionHandler({
+          hasHold: !!this._config.hold_action,
+          hasDoubleClick: !!this._config.double_tap_action,
+        })}
+        @action="${this._handleAction}"
+      >
         <div class="${contentClasses}">
           ${headerVisible
             ? html`
@@ -232,8 +311,8 @@ export class LinearGaugeCard extends LitElement {
               class="gauge-svg"
             >
               ${renderTrack(layout, this._config.display ?? {})}
-              ${renderSegments(this._config.segments ?? [], layout, this._config.display ?? {})}
-              ${renderWarnings(this._config.warnings ?? [], layout, this._config.display ?? {})}
+              ${renderSegments(this._config.segments ?? [], layout, this._config.display ?? {}, id)}
+              ${renderWarnings(this._config.warnings ?? [], layout, this._config.display ?? {}, id)}
               ${renderDialBeforeTicks}
               ${renderHistory(this._historyData, this._config, layout)}
               ${renderMajorTicks(this._config, layout)}
@@ -254,31 +333,45 @@ export class LinearGaugeCard extends LitElement {
     return value.toFixed(2);
   }
 
-  private _handleAction(): void {
-    if (this._config.tap_action) {
-      this._fireAction(this._config.tap_action);
-    } else {
-      // Default: open more-info dialog
-      const event = new CustomEvent('hass-more-info', {
-        composed: true,
-        bubbles: true,
-        detail: { entityId: this._config.entity },
-      });
-      this.dispatchEvent(event);
+  private _handleAction(ev: CustomEvent): void {
+    const action = ev.detail?.action ?? 'tap';
+    let actionConfig: ActionConfig | undefined;
+
+    switch (action) {
+      case 'hold':
+        actionConfig = this._config.hold_action;
+        break;
+      case 'double_tap':
+        actionConfig = this._config.double_tap_action;
+        break;
+      case 'tap':
+      default:
+        actionConfig = this._config.tap_action;
+        break;
     }
+
+    if (!actionConfig) {
+      this._fireMoreInfo();
+      return;
+    }
+
+    this._fireAction(actionConfig);
+  }
+
+  private _fireMoreInfo(): void {
+    const event = new CustomEvent('hass-more-info', {
+      composed: true,
+      bubbles: true,
+      detail: { entityId: this._config.entity },
+    });
+    this.dispatchEvent(event);
   }
 
   private _fireAction(actionConfig: ActionConfig): void {
     switch (actionConfig.action) {
-      case 'more-info': {
-        const event = new CustomEvent('hass-more-info', {
-          composed: true,
-          bubbles: true,
-          detail: { entityId: this._config.entity },
-        });
-        this.dispatchEvent(event);
+      case 'more-info':
+        this._fireMoreInfo();
         break;
-      }
       case 'navigate':
         if (actionConfig.navigation_path) {
           window.history.pushState(null, '', actionConfig.navigation_path);
@@ -292,7 +385,7 @@ export class LinearGaugeCard extends LitElement {
       case 'call-service':
         if (actionConfig.service) {
           const [domain, service] = actionConfig.service.split('.');
-          this.hass.callApi('POST', `services/${domain}/${service}`, actionConfig.service_data ?? {});
+          this.hass.callService(domain, service, actionConfig.service_data ?? {});
         }
         break;
       case 'none':
@@ -407,6 +500,16 @@ export class LinearGaugeCard extends LitElement {
       .gauge-svg .tick-label {
         font-family: var(--ha-card-header-font-family, inherit);
         user-select: none;
+      }
+
+      .value-badge.unavailable {
+        color: var(--secondary-text-color);
+        opacity: 0.7;
+        font-style: italic;
+      }
+
+      .unavailable-gauge {
+        opacity: 0.4;
       }
 
       .warning {
