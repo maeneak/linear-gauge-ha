@@ -103,6 +103,7 @@ export interface DialConfig {
   style?: 'needle' | 'line' | 'triangle' | 'dot' | 'bar-fill';
   color?: string;
   size?: number;
+  length?: number;
   showValue?: boolean;
   valueFontSize?: number;
   valuePosition?: 'above' | 'below' | 'right' | 'left' | 'inside';

@@ -582,6 +582,22 @@ export class LinearGaugeCardEditor extends LitElement {
         ></ha-textfield>
       </div>
 
+      <div class="row">
+        <ha-textfield
+          class="half"
+          .label="${'Length (px, line/needle)'}"
+          .value="${String(dial.length)}"
+          type="number"
+          @input="${(e: Event) =>
+            this._updateNestedConfig(
+              'dial',
+              'length',
+              parseFloat((e.target as HTMLInputElement).value) || DEFAULT_DIAL.length,
+            )}"
+        ></ha-textfield>
+        <div class="half"></div>
+      </div>
+
       <h4>Value Display</h4>
       <div class="row">
         <div class="field half">

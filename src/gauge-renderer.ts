@@ -378,6 +378,7 @@ export function renderDial(
   const clipId = `dial-clip-${Math.random().toString(36).slice(2, 8)}`;
 
   if (layout.orientation === 'horizontal') {
+    const dialLength = Math.max(1, dial.length ?? layout.trackHeight);
     switch (dial.style) {
       case 'bar-fill': {
         const barWidth = pos - layout.trackX;
@@ -394,12 +395,12 @@ export function renderDial(
       }
       case 'needle': {
         const needleW = dial.size ?? 3;
-        const top = layout.trackY - 4;
-        const bottom = layout.trackY + layout.trackHeight + 4;
+        const top = layout.trackY;
+        const bottom = top + dialLength;
         return svg`
           <line x1="${pos}" y1="${top}" x2="${pos}" y2="${bottom}"
             stroke="${color}" stroke-width="${needleW}" stroke-linecap="round" class="gauge-dial-needle" />
-          <polygon points="${pos - 4},${top - 2} ${pos + 4},${top - 2} ${pos},${top + 3}"
+          <polygon points="${pos - 4},${top + 1} ${pos + 4},${top + 1} ${pos},${top + 6}"
             fill="${color}" />
         `;
       }
@@ -421,7 +422,7 @@ export function renderDial(
       case 'line': {
         const lw = dial.size ?? 3;
         return svg`
-          <line x1="${pos}" y1="${layout.trackY}" x2="${pos}" y2="${layout.trackY + layout.trackHeight}"
+          <line x1="${pos}" y1="${layout.trackY}" x2="${pos}" y2="${layout.trackY + dialLength}"
             stroke="${color}" stroke-width="${lw}" stroke-linecap="round" class="gauge-dial-line" />
         `;
       }

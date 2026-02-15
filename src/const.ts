@@ -41,6 +41,7 @@ export const DEFAULT_DIAL: Required<DialConfig> = {
   style: 'bar-fill',
   color: 'var(--primary-color)',
   size: 4,
+  length: 14,
   showValue: true,
   valueFontSize: 14,
   valuePosition: 'right',

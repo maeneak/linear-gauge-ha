@@ -94,6 +94,7 @@ dial:
   style: bar-fill
   color: segment
   size: 4
+  length: 14
   showValue: true
   valueFontSize: 14
   valuePosition: right
@@ -158,6 +159,7 @@ Array of colored value ranges:
 | `dial.style` | string | bar-fill | `bar-fill`, `needle`, `line`, `triangle`, `dot` |
 | `dial.color` | string | primary-color | CSS color or `segment` to inherit |
 | `dial.size` | number | 4 | Thickness / radius |
+| `dial.length` | number | 14 | Indicator length in px (`line`/`needle`, horizontal mode) |
 | `dial.showValue` | boolean | true | Show numeric value badge |
 | `dial.valueFontSize` | number | 14 | Value text size |
 | `dial.valuePosition` | string | right | `above`, `below`, `right`, `left`, `inside` |
