@@ -62,6 +62,19 @@ export class LinearGaugeCardEditor extends LitElement {
   @state() private _config!: LinearGaugeCardConfig;
   @state() private _expandedSections: Set<SectionKey> = new Set(['general']);
 
+  public async connectedCallback(): Promise<void> {
+    super.connectedCallback();
+    // Load HA form elements (ha-entity-picker, ha-select, etc.)
+    const helpers = await (window as any).loadCardHelpers?.();
+    if (helpers) {
+      const card = await helpers.createCardElement({ type: 'entity', entity: 'sun.sun' });
+      if (card) {
+        // Trigger the element to load its dependencies
+        card.hass = this.hass;
+      }
+    }
+  }
+
   public setConfig(config: LinearGaugeCardConfig): void {
     this._config = { ...config };
   }

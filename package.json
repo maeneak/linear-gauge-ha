@@ -6,7 +6,12 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c --watch",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "ha:start": "docker compose up -d",
+    "ha:stop": "docker compose down",
+    "ha:logs": "docker compose logs -f homeassistant",
+    "ha:restart": "docker compose restart homeassistant",
+    "start": "npm run build && docker compose up -d && npm run dev"
   },
   "keywords": [
     "home-assistant",

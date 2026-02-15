@@ -1,0 +1,36 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load the custom card resource
+lovelace:
+  resources:
+    - url: /local/linear-gauge-card.js
+      type: module
+
+# Example sensors for testing the gauge card
+template:
+  - sensor:
+      - name: "Test Temperature"
+        unit_of_measurement: "°C"
+        state: >
+          {{ (range(15, 35) | random) + (range(0, 9) | random) / 10 }}
+      - name: "Test Fuel Rate"
+        unit_of_measurement: "L/h"
+        state: >
+          {{ (range(50, 250) | random) + (range(0, 9) | random) / 10 }}
+      - name: "Test Humidity"
+        unit_of_measurement: "%"
+        state: >
+          {{ range(30, 80) | random }}
+      - name: "Test Power"
+        unit_of_measurement: "W"
+        state: >
+          {{ range(0, 3000) | random }}
+      - name: "Test Speed"
+        unit_of_measurement: "km/h"
+        state: >
+          {{ (range(0, 120) | random) + (range(0, 9) | random) / 10 }}
+
+automation: !include automations.yaml
+scene: !include scenes.yaml
+script: !include scripts.yaml

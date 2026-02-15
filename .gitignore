@@ -7,3 +7,16 @@ dist/
 .vscode/
 !.vscode/settings.json
 !.vscode/extensions.json
+
+# HA dev config runtime files (keep config templates)
+ha-dev-config/.storage/
+ha-dev-config/.cloud/
+ha-dev-config/home-assistant_v2.db
+ha-dev-config/home-assistant_v2.db-shm
+ha-dev-config/home-assistant_v2.db-wal
+ha-dev-config/home-assistant.log
+ha-dev-config/home-assistant.log.*
+ha-dev-config/tts/
+ha-dev-config/deps/
+ha-dev-config/backups/
+ha-dev-config/.HA_VERSION

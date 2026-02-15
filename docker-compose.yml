@@ -1,0 +1,14 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: ha-dev
+    restart: unless-stopped
+    ports:
+      - "8123:8123"
+    volumes:
+      # Mount the HA dev config
+      - ./ha-dev-config:/config
+      # Mount the built card into the www folder (live reload on rebuild)
+      - ./dist/linear-gauge-card.js:/config/www/linear-gauge-card.js:ro
+    environment:
+      - TZ=UTC

@@ -1,0 +1,118 @@
+title: Linear Gauge Dev
+views:
+  - title: Gauges
+    path: gauges
+    cards:
+      - type: custom:linear-gauge-card
+        entity: sensor.test_fuel_rate
+        name: Fuel Rate
+        min: 0
+        max: 300
+        segments:
+          - from: 0
+            to: 100
+            color: "#4CAF50"
+          - from: 100
+            to: 200
+            color: "#FFEB3B"
+          - from: 200
+            to: 300
+            color: "#F44336"
+        dial:
+          style: bar-fill
+          color: segment
+          showValue: true
+          valuePosition: right
+        ticks:
+          major:
+            interval: 50
+            labels: true
+          minor:
+            count: 4
+
+      - type: custom:linear-gauge-card
+        entity: sensor.test_temperature
+        name: Temperature
+        min: 0
+        max: 50
+        segments:
+          - from: 0
+            to: 18
+            color: "#2196F3"
+          - from: 18
+            to: 26
+            color: "#4CAF50"
+          - from: 26
+            to: 50
+            color: "#F44336"
+        dial:
+          style: needle
+          color: "#333"
+          showValue: true
+
+      - type: custom:linear-gauge-card
+        entity: sensor.test_humidity
+        name: Humidity
+        min: 0
+        max: 100
+        unit: "%"
+        dial:
+          style: bar-fill
+          color: "#2196F3"
+        ticks:
+          major:
+            interval: 25
+            labelSuffix: "%"
+
+      - type: custom:linear-gauge-card
+        entity: sensor.test_power
+        name: Power Draw
+        min: 0
+        max: 3000
+        unit: W
+        segments:
+          - from: 0
+            to: 1000
+            color: "#4CAF50"
+          - from: 1000
+            to: 2000
+            color: "#FF9800"
+          - from: 2000
+            to: 3000
+            color: "#F44336"
+        warnings:
+          - from: 2500
+            to: 3000
+            color: "#F44336"
+            style: hatch
+        dial:
+          style: bar-fill
+          color: segment
+        ticks:
+          major:
+            interval: 500
+          minor:
+            count: 4
+
+      - type: custom:linear-gauge-card
+        entity: sensor.test_speed
+        name: Speed (Vertical)
+        min: 0
+        max: 120
+        orientation: vertical
+        segments:
+          - from: 0
+            to: 50
+            color: "#4CAF50"
+          - from: 50
+            to: 80
+            color: "#FFEB3B"
+          - from: 80
+            to: 120
+            color: "#F44336"
+        dial:
+          style: bar-fill
+          color: segment
+        ticks:
+          major:
+            interval: 20
