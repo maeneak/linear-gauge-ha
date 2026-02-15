@@ -49,6 +49,7 @@ export interface GaugeLayout {
 
 export function computeLayout(config: LinearGaugeCardConfig): GaugeLayout {
   const orientation = config.orientation ?? 'horizontal';
+  const condensed = config.condensed === true;
   const min = config.min ?? 0;
   const max = config.max ?? 100;
 
@@ -58,13 +59,17 @@ export function computeLayout(config: LinearGaugeCardConfig): GaugeLayout {
   const tickSpace = Math.max(major.size, (config.ticks?.minor ? { ...DEFAULT_MINOR_TICK, ...config.ticks.minor }.size : 0));
 
   if (orientation === 'horizontal') {
-    const padding = 8;
+    const padding = condensed ? 4 : 8;
+    const topPadding = condensed ? 2 : tickSpace + labelSpace + 4;
+    const bottomTickSpace = condensed ? Math.max(0, tickSpace - 2) : tickSpace;
+    const bottomLabelSpace = condensed ? Math.max(0, labelSpace - 2) : labelSpace;
     const svgWidth = 300;
     const trackHeight = GAUGE_TRACK_HEIGHT;
-    const trackY = tickSpace + labelSpace + 4;
+    const trackY = topPadding;
     const trackX = padding;
     const trackWidth = svgWidth - padding * 2;
-    const svgHeight = trackY + trackHeight + tickSpace + labelSpace + 8;
+    const bottomPadding = condensed ? 4 : 8;
+    const svgHeight = trackY + trackHeight + bottomTickSpace + bottomLabelSpace + bottomPadding;
     return { orientation, trackX, trackY, trackWidth, trackHeight, svgWidth, svgHeight, min, max };
   } else {
     const padding = 8;
