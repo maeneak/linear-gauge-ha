@@ -61,18 +61,38 @@ export class LinearGaugeCardEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: LinearGaugeCardConfig;
   @state() private _expandedSections: Set<SectionKey> = new Set(['general']);
+  @state() private _helpersLoaded = false;
 
   public async connectedCallback(): Promise<void> {
     super.connectedCallback();
-    // Load HA form elements (ha-entity-picker, ha-select, etc.)
-    const helpers = await (window as any).loadCardHelpers?.();
-    if (helpers) {
-      const card = await helpers.createCardElement({ type: 'entity', entity: 'sun.sun' });
-      if (card) {
-        // Trigger the element to load its dependencies
-        card.hass = this.hass;
+    await this._loadElementDependencies();
+  }
+
+  private async _loadElementDependencies(): Promise<void> {
+    // Multiple strategies to ensure HA elements are loaded
+    // Strategy 1: loadCardHelpers
+    try {
+      const helpers = await (window as any).loadCardHelpers?.();
+      if (helpers) {
+        // Creating an entities card forces HA to load ha-entity-picker
+        const entitiesCard = await helpers.createCardElement({
+          type: 'entities',
+          entities: ['sun.sun'],
+        });
+        if (entitiesCard) {
+          entitiesCard.hass = this.hass;
+        }
       }
+    } catch (_) {
+      // Ignore errors
     }
+
+    // Strategy 2: Wait for the element to be defined
+    if (!customElements.get('ha-entity-picker')) {
+      await customElements.whenDefined('ha-entity-picker').catch(() => {});
+    }
+
+    this._helpersLoaded = true;
   }
 
   public setConfig(config: LinearGaugeCardConfig): void {
@@ -158,17 +178,30 @@ export class LinearGaugeCardEditor extends LitElement {
   // ---- General section ----
 
   private _renderGeneral() {
+    const entityPicker = this._helpersLoaded
+      ? html`
+          <ha-entity-picker
+            .hass="${this.hass}"
+            .value="${this._config.entity ?? ''}"
+            .label="${'Entity'}"
+            .includeDomains="${['sensor', 'input_number', 'number', 'counter']}"
+            .required="${true}"
+            @value-changed="${(e: CustomEvent) => this._updateConfig('entity', e.detail.value)}"
+            allow-custom-entity
+          ></ha-entity-picker>
+        `
+      : html`
+          <ha-textfield
+            .label="${'Entity'}"
+            .value="${this._config.entity ?? ''}"
+            @input="${(e: Event) =>
+              this._updateConfig('entity', (e.target as HTMLInputElement).value)}"
+          ></ha-textfield>
+        `;
+
     return html`
       <div class="field">
-        <ha-entity-picker
-          .hass="${this.hass}"
-          .value="${this._config.entity ?? ''}"
-          .label="${'Entity'}"
-          .includeDomains="${['sensor', 'input_number', 'number', 'counter']}"
-          .required="${true}"
-          @value-changed="${(e: CustomEvent) => this._updateConfig('entity', e.detail.value)}"
-          allow-custom-entity
-        ></ha-entity-picker>
+        ${entityPicker}
       </div>
 
       <div class="field">
