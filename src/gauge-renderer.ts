@@ -62,14 +62,14 @@ export function computeLayout(config: LinearGaugeCardConfig): GaugeLayout {
   if (orientation === 'horizontal') {
     const padding = condensed ? 4 : 8;
     const topPadding = condensed ? 0 : tickSpace + labelSpace + 4;
-    const bottomTickSpace = condensed ? 0 : tickSpace;
-    const bottomLabelSpace = condensed ? 0 : labelSpace;
+    const bottomTickSpace = condensed ? 6 : tickSpace;
+    const bottomLabelSpace = condensed ? (showLabels ? 12 : 0) : labelSpace;
     const svgWidth = 300;
-    const trackHeight = GAUGE_TRACK_HEIGHT;
+    const trackHeight = condensed ? 8 : GAUGE_TRACK_HEIGHT;
     const trackY = topPadding;
     const trackX = padding;
     const trackWidth = svgWidth - padding * 2;
-    const bottomPadding = condensed ? 2 : 8;
+    const bottomPadding = condensed ? 1 : 8;
     const defaultBottomExtent = trackHeight + bottomTickSpace + bottomLabelSpace + bottomPadding;
 
     let dialBottomExtent = trackHeight;
@@ -271,9 +271,13 @@ export function renderMajorTicks(
   config: LinearGaugeCardConfig,
   layout: GaugeLayout,
 ): TemplateResult {
-  if (config.condensed) return svg``;
   const t = { ...DEFAULT_MAJOR_TICK, ...config.ticks?.major };
   if (t.interval <= 0) return svg``;
+
+  const condensed = config.condensed === true;
+  const tickSize = condensed ? 6 : t.size;
+  const labelFontSize = condensed ? 9 : t.labelFontSize;
+  const gap = condensed ? 1 : 2;
 
   const ticks: TemplateResult[] = [];
   const { min, max } = layout;
@@ -283,8 +287,8 @@ export function renderMajorTicks(
 
     if (layout.orientation === 'horizontal') {
       // Ticks below the track
-      const y1 = layout.trackY + layout.trackHeight + 2;
-      const y2 = y1 + t.size;
+      const y1 = layout.trackY + layout.trackHeight + gap;
+      const y2 = y1 + tickSize;
       ticks.push(svg`
         <line x1="${pos}" y1="${y1}" x2="${pos}" y2="${y2}"
           stroke="${t.color}" stroke-width="${t.width}" />
@@ -293,8 +297,8 @@ export function renderMajorTicks(
       if (t.labels) {
         const label = Number.isInteger(v) ? v.toString() : v.toFixed(1);
         ticks.push(svg`
-          <text x="${pos}" y="${y2 + t.labelFontSize}" text-anchor="middle"
-            font-size="${t.labelFontSize}" fill="${t.labelColor}" class="tick-label">
+          <text x="${pos}" y="${y2 + labelFontSize}" text-anchor="middle"
+            font-size="${labelFontSize}" fill="${t.labelColor}" class="tick-label">
             ${label}${t.labelSuffix}
           </text>
         `);
@@ -329,10 +333,13 @@ export function renderMinorTicks(
   config: LinearGaugeCardConfig,
   layout: GaugeLayout,
 ): TemplateResult {
-  if (config.condensed) return svg``;
   const major = { ...DEFAULT_MAJOR_TICK, ...config.ticks?.major };
   const minor = { ...DEFAULT_MINOR_TICK, ...config.ticks?.minor };
   if (minor.count <= 0 || major.interval <= 0) return svg``;
+
+  const condensed = config.condensed === true;
+  const minorSize = condensed ? 4 : minor.size;
+  const gap = condensed ? 1 : 2;
 
   const ticks: TemplateResult[] = [];
   const { min, max } = layout;
@@ -345,8 +352,8 @@ export function renderMinorTicks(
       const pos = valueToPos(v, layout);
 
       if (layout.orientation === 'horizontal') {
-        const y1 = layout.trackY + layout.trackHeight + 2;
-        const y2 = y1 + minor.size;
+        const y1 = layout.trackY + layout.trackHeight + gap;
+        const y2 = y1 + minorSize;
         ticks.push(svg`
           <line x1="${pos}" y1="${y1}" x2="${pos}" y2="${y2}"
             stroke="${minor.color}" stroke-width="${minor.width}" />

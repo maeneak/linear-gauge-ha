@@ -226,8 +226,9 @@ export class LinearGaugeCard extends LitElement {
           <div class="gauge-container">
             <svg
               viewBox="0 0 ${layout.svgWidth} ${layout.svgHeight}"
-              preserveAspectRatio="${this._config.orientation === 'vertical' ? 'xMidYMid meet' : 'xMidYMid meet'}"
+              preserveAspectRatio="${condensed ? 'none' : 'xMidYMid meet'}"
               width="100%"
+              height="${condensed ? layout.svgHeight : nothing}"
               class="gauge-svg"
             >
               ${renderTrack(layout, this._config.display ?? {})}
@@ -384,7 +385,7 @@ export class LinearGaugeCard extends LitElement {
       }
 
       .card-content.condensed .value-badge {
-        padding: 2px 8px;
+        padding: 1px 6px;
         border-radius: 10px;
         line-height: 1.1;
       }
