@@ -54,6 +54,26 @@ condensed: true
 show_name: false
 ```
 
+### Inline Value Box (Start)
+
+```yaml
+type: custom:linear-gauge-card
+entity: sensor.temperature
+dial:
+  showValue: true
+  valuePosition: box-start
+```
+
+### Inline Value Box (End)
+
+```yaml
+type: custom:linear-gauge-card
+entity: sensor.temperature
+dial:
+  showValue: true
+  valuePosition: box-end
+```
+
 ### Rudder Feedback Example
 
 ```yaml
@@ -188,7 +208,7 @@ Array of colored value ranges:
 | `dial.length` | number | 14 | Indicator length in px (`line`/`needle`, horizontal mode) |
 | `dial.showValue` | boolean | true | Show numeric value badge |
 | `dial.valueFontSize` | number | 14 | Value text size |
-| `dial.valuePosition` | string | right | `above`, `below`, `right`, `left`, `inside` |
+| `dial.valuePosition` | string | right | `above`, `below`, `right`, `left`, `inside`, `box-start`, `box-end` (`box-start`/`box-end` place a plain value box inline with the gauge row using logical start/end, in both horizontal and vertical layouts) |
 
 ### Warnings
 

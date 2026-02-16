@@ -34,6 +34,8 @@ const VALUE_POSITIONS = [
   { value: 'right', label: 'Right' },
   { value: 'left', label: 'Left' },
   { value: 'inside', label: 'Inside' },
+  { value: 'box-start', label: 'Box Start' },
+  { value: 'box-end', label: 'Box End' },
 ];
 
 const WARNING_STYLES = [

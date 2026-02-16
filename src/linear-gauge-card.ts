@@ -150,8 +150,10 @@ export class LinearGaugeCard extends LitElement {
 
     const dial = { ...DEFAULT_DIAL, ...this._config.dial };
     const showName = this._config.show_name !== false;
-    const headerVisible =
-      (showName && this._config.name !== false) || (dial.showValue && dial.valuePosition !== 'inside');
+    const valuePosition = dial.valuePosition ?? 'right';
+    const isBoxInline = valuePosition === 'box-start' || valuePosition === 'box-end';
+    const showHeaderValue = dial.showValue && valuePosition !== 'inside' && !isBoxInline;
+    const headerVisible = (showName && this._config.name !== false) || showHeaderValue;
     const headerHeight = headerVisible ? 28 : 0;
     const contentPadding = 24;
     const layout = this._cachedLayout ?? computeLayout(this._config);
@@ -219,7 +221,20 @@ export class LinearGaugeCard extends LitElement {
     const layout = this._cachedLayout ?? computeLayout(this._config);
     const dial = { ...DEFAULT_DIAL, ...this._config.dial };
     const condensed = this._config.condensed === true;
-    const headerVisible = name !== null || (dial.showValue && dial.valuePosition !== 'inside');
+    const valuePosition = dial.valuePosition ?? 'right';
+    const isBoxInline = valuePosition === 'box-start' || valuePosition === 'box-end';
+    const showHeaderValue = dial.showValue && valuePosition !== 'inside' && !isBoxInline;
+    const showInlineBoxValue = dial.showValue && isBoxInline;
+    const headerVisible = name !== null || showHeaderValue;
+    const isHeaderValueLeft = showHeaderValue && valuePosition === 'left';
+    const headerRowClasses = [
+      'header-row',
+      isHeaderValueLeft ? 'value-left' : '',
+      showHeaderValue && name === null && isHeaderValueLeft ? 'value-only-left' : '',
+      showHeaderValue && name === null && !isHeaderValueLeft ? 'value-only-right' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
     const contentClasses = [
       'card-content',
       this._config.orientation === 'vertical' ? 'vertical' : 'horizontal',
@@ -233,6 +248,7 @@ export class LinearGaugeCard extends LitElement {
     const isUnavailable = stateValue === 'unavailable' || stateValue === 'unknown';
 
     if (isUnavailable) {
+      const unavailableLabel = stateValue === 'unavailable' ? 'Unavailable' : 'Unknown';
       return html`
         <ha-card
           ${actionHandler({
@@ -244,25 +260,60 @@ export class LinearGaugeCard extends LitElement {
           <div class="${contentClasses}">
             ${headerVisible
               ? html`
-                  <div class="header-row">
+                  <div class="${headerRowClasses}">
+                    ${showHeaderValue && isHeaderValueLeft
+                      ? html`<div class="value-badge unavailable">${unavailableLabel}</div>`
+                      : ''}
                     ${name !== null ? html`<div class="name">${name}</div>` : ''}
-                    <div class="value-badge unavailable">
-                      ${stateValue === 'unavailable' ? 'Unavailable' : 'Unknown'}
-                    </div>
+                    ${showHeaderValue && !isHeaderValueLeft
+                      ? html`<div class="value-badge unavailable">${unavailableLabel}</div>`
+                      : ''}
                   </div>
                 `
               : ''}
-            <div class="gauge-container">
-              <svg
-                viewBox="0 0 ${layout.svgWidth} ${layout.svgHeight}"
-                preserveAspectRatio="${condensed ? 'none' : 'xMidYMid meet'}"
-                width="100%"
-                height="${condensed ? layout.svgHeight : nothing}"
-                class="gauge-svg unavailable-gauge"
-              >
-                ${renderTrack(layout, this._config.display ?? {})}
-              </svg>
-            </div>
+            ${showInlineBoxValue
+              ? html`
+                  <div class="gauge-inline-row">
+                    ${valuePosition === 'box-start'
+                      ? html`
+                          <div class="value-box unavailable" style="font-size:${dial.valueFontSize}px">
+                            ${unavailableLabel}
+                          </div>
+                        `
+                      : ''}
+                    <div class="gauge-container">
+                      <svg
+                        viewBox="0 0 ${layout.svgWidth} ${layout.svgHeight}"
+                        preserveAspectRatio="${condensed ? 'none' : 'xMidYMid meet'}"
+                        width="100%"
+                        height="${condensed ? layout.svgHeight : nothing}"
+                        class="gauge-svg unavailable-gauge"
+                      >
+                        ${renderTrack(layout, this._config.display ?? {})}
+                      </svg>
+                    </div>
+                    ${valuePosition === 'box-end'
+                      ? html`
+                          <div class="value-box unavailable" style="font-size:${dial.valueFontSize}px">
+                            ${unavailableLabel}
+                          </div>
+                        `
+                      : ''}
+                  </div>
+                `
+              : html`
+                  <div class="gauge-container">
+                    <svg
+                      viewBox="0 0 ${layout.svgWidth} ${layout.svgHeight}"
+                      preserveAspectRatio="${condensed ? 'none' : 'xMidYMid meet'}"
+                      width="100%"
+                      height="${condensed ? layout.svgHeight : nothing}"
+                      class="gauge-svg unavailable-gauge"
+                    >
+                      ${renderTrack(layout, this._config.display ?? {})}
+                    </svg>
+                  </div>
+                `}
           </div>
         </ha-card>
       `;
@@ -271,6 +322,7 @@ export class LinearGaugeCard extends LitElement {
     const value = parseFloat(stateValue);
     const numericValue = isNaN(value) ? null : value;
     const displayValue = numericValue !== null ? this._formatValue(numericValue) : stateValue;
+    const displayValueWithUnit = unit ? `${displayValue} ${unit}` : displayValue;
     const id = this._instanceId;
     const renderDialBeforeTicks =
       numericValue !== null && dial.style === 'bar-fill'
@@ -292,34 +344,84 @@ export class LinearGaugeCard extends LitElement {
         <div class="${contentClasses}">
           ${headerVisible
             ? html`
-                <div class="header-row">
-                  ${name !== null ? html`<div class="name">${name}</div>` : ''}
-                  ${dial.showValue && dial.valuePosition !== 'inside'
+                <div class="${headerRowClasses}">
+                  ${showHeaderValue && isHeaderValueLeft
                     ? html`<div class="value-badge" style="font-size:${dial.valueFontSize}px; color:${dial.valueColor}">
-                        ${displayValue} ${unit}
+                        ${displayValueWithUnit}
+                      </div>`
+                    : ''}
+                  ${name !== null ? html`<div class="name">${name}</div>` : ''}
+                  ${showHeaderValue && !isHeaderValueLeft
+                    ? html`<div class="value-badge" style="font-size:${dial.valueFontSize}px; color:${dial.valueColor}">
+                        ${displayValueWithUnit}
                       </div>`
                     : ''}
                 </div>
               `
             : ''}
-          <div class="gauge-container">
-            <svg
-              viewBox="0 0 ${layout.svgWidth} ${layout.svgHeight}"
-              preserveAspectRatio="${condensed ? 'none' : 'xMidYMid meet'}"
-              width="100%"
-              height="${condensed ? layout.svgHeight : nothing}"
-              class="gauge-svg"
-            >
-              ${renderTrack(layout, this._config.display ?? {})}
-              ${renderSegments(this._config.segments ?? [], layout, this._config.display ?? {}, id)}
-              ${renderWarnings(this._config.warnings ?? [], layout, this._config.display ?? {}, id)}
-              ${renderDialBeforeTicks}
-              ${renderHistory(this._historyData, this._config, layout)}
-              ${renderMajorTicks(this._config, layout)}
-              ${renderMinorTicks(this._config, layout)}
-              ${renderDialAfterTicks}
-            </svg>
-          </div>
+          ${showInlineBoxValue
+            ? html`
+                <div class="gauge-inline-row">
+                  ${valuePosition === 'box-start'
+                    ? html`
+                        <div
+                          class="value-box"
+                          style="font-size:${dial.valueFontSize}px; color:${dial.valueColor}"
+                        >
+                          ${displayValueWithUnit}
+                        </div>
+                      `
+                    : ''}
+                  <div class="gauge-container">
+                    <svg
+                      viewBox="0 0 ${layout.svgWidth} ${layout.svgHeight}"
+                      preserveAspectRatio="${condensed ? 'none' : 'xMidYMid meet'}"
+                      width="100%"
+                      height="${condensed ? layout.svgHeight : nothing}"
+                      class="gauge-svg"
+                    >
+                      ${renderTrack(layout, this._config.display ?? {})}
+                      ${renderSegments(this._config.segments ?? [], layout, this._config.display ?? {}, id)}
+                      ${renderWarnings(this._config.warnings ?? [], layout, this._config.display ?? {}, id)}
+                      ${renderDialBeforeTicks}
+                      ${renderHistory(this._historyData, this._config, layout)}
+                      ${renderMajorTicks(this._config, layout)}
+                      ${renderMinorTicks(this._config, layout)}
+                      ${renderDialAfterTicks}
+                    </svg>
+                  </div>
+                  ${valuePosition === 'box-end'
+                    ? html`
+                        <div
+                          class="value-box"
+                          style="font-size:${dial.valueFontSize}px; color:${dial.valueColor}"
+                        >
+                          ${displayValueWithUnit}
+                        </div>
+                      `
+                    : ''}
+                </div>
+              `
+            : html`
+                <div class="gauge-container">
+                  <svg
+                    viewBox="0 0 ${layout.svgWidth} ${layout.svgHeight}"
+                    preserveAspectRatio="${condensed ? 'none' : 'xMidYMid meet'}"
+                    width="100%"
+                    height="${condensed ? layout.svgHeight : nothing}"
+                    class="gauge-svg"
+                  >
+                    ${renderTrack(layout, this._config.display ?? {})}
+                    ${renderSegments(this._config.segments ?? [], layout, this._config.display ?? {}, id)}
+                    ${renderWarnings(this._config.warnings ?? [], layout, this._config.display ?? {}, id)}
+                    ${renderDialBeforeTicks}
+                    ${renderHistory(this._historyData, this._config, layout)}
+                    ${renderMajorTicks(this._config, layout)}
+                    ${renderMinorTicks(this._config, layout)}
+                    ${renderDialAfterTicks}
+                  </svg>
+                </div>
+              `}
         </div>
       </ha-card>
     `;
@@ -442,6 +544,14 @@ export class LinearGaugeCard extends LitElement {
         gap: 8px;
       }
 
+      .header-row.value-only-right {
+        justify-content: flex-end;
+      }
+
+      .header-row.value-only-left {
+        justify-content: flex-start;
+      }
+
       .card-content.condensed .header-row {
         margin-bottom: 0;
         gap: 6px;
@@ -483,9 +593,47 @@ export class LinearGaugeCard extends LitElement {
         line-height: 1.1;
       }
 
+      .gauge-inline-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        direction: inherit;
+        width: 100%;
+      }
+
+      .card-content.condensed .gauge-inline-row {
+        gap: 6px;
+      }
+
+      .value-box {
+        font-weight: 500;
+        white-space: nowrap;
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid var(--divider-color, rgba(127,127,127,0.25));
+        background: transparent;
+        line-height: 1.2;
+        flex-shrink: 0;
+      }
+
+      .card-content.condensed .value-box {
+        padding: 1px 4px;
+      }
+
       .gauge-container {
         width: 100%;
         line-height: 0;
+      }
+
+      .gauge-inline-row .gauge-container {
+        width: auto;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .card-content.vertical .gauge-inline-row {
+        flex: 1;
+        min-width: 0;
       }
 
       .card-content.vertical .gauge-container {
@@ -503,6 +651,12 @@ export class LinearGaugeCard extends LitElement {
       }
 
       .value-badge.unavailable {
+        color: var(--secondary-text-color);
+        opacity: 0.7;
+        font-style: italic;
+      }
+
+      .value-box.unavailable {
         color: var(--secondary-text-color);
         opacity: 0.7;
         font-style: italic;

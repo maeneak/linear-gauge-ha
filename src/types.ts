@@ -107,7 +107,7 @@ export interface DialConfig {
   length?: number;
   showValue?: boolean;
   valueFontSize?: number;
-  valuePosition?: 'above' | 'below' | 'right' | 'left' | 'inside';
+  valuePosition?: 'above' | 'below' | 'right' | 'left' | 'inside' | 'box-start' | 'box-end';
   valueColor?: string;
 }
 
