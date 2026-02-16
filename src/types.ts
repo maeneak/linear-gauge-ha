@@ -92,12 +92,22 @@ export interface SegmentConfig {
   label?: string;
 }
 
+export interface WarningNotificationConfig {
+  enabled: boolean;
+  title?: string;
+  message?: string;
+  service?: string;
+}
+
 export interface WarningConfig {
   from: number;
   to: number;
   color: string;
   label?: string;
   style?: 'fill' | 'hatch' | 'border';
+  cardBackgroundColor?: string;
+  headerTextColor?: string;
+  notification?: WarningNotificationConfig;
 }
 
 export interface DialConfig {

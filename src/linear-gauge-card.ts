@@ -7,6 +7,7 @@ import {
   LinearGaugeCardConfig,
   HistoryData,
   ActionConfig,
+  WarningConfig,
 } from './types';
 import {
   CARD_VERSION,
@@ -58,6 +59,7 @@ export class LinearGaugeCard extends LitElement {
   private _historyCache: { current: HistoryCache | null } = { current: null };
   private _cachedLayout?: GaugeLayout;
   private _instanceId = `lg-${LinearGaugeCard._instanceCounter++}`;
+  private _activeWarningIndices: Set<number> = new Set();
 
   public get hass(): HomeAssistant {
     return this._hass!;
@@ -116,6 +118,7 @@ export class LinearGaugeCard extends LitElement {
     if (oldEntity && oldEntity !== this._config.entity) {
       this._historyData = null;
       this._historyCache.current = null;
+      this._activeWarningIndices = new Set();
     }
   }
 
@@ -172,6 +175,7 @@ export class LinearGaugeCard extends LitElement {
       if (histCfg.enabled) {
         this._scheduleHistoryFetch();
       }
+      this._checkWarningNotifications();
     }
   }
 
@@ -193,6 +197,61 @@ export class LinearGaugeCard extends LitElement {
     if (this._historyFetchTimer) {
       clearTimeout(this._historyFetchTimer);
     }
+  }
+
+  // ---- Warning actions ----
+
+  private _getActiveWarning(value: number): WarningConfig | null {
+    const warnings = this._config?.warnings ?? [];
+    for (const w of warnings) {
+      if (value >= w.from && value <= w.to) return w;
+    }
+    return null;
+  }
+
+  private _getActiveWarningIndices(value: number): Set<number> {
+    const result = new Set<number>();
+    const warnings = this._config?.warnings ?? [];
+    for (let i = 0; i < warnings.length; i++) {
+      if (value >= warnings[i].from && value <= warnings[i].to) {
+        result.add(i);
+      }
+    }
+    return result;
+  }
+
+  private _checkWarningNotifications(): void {
+    if (!this.hass || !this._config) return;
+    const stateObj = this.hass.states[this._config.entity];
+    if (!stateObj) return;
+    const value = parseFloat(stateObj.state);
+    if (isNaN(value)) return;
+
+    const warnings = this._config.warnings ?? [];
+    const currentActive = this._getActiveWarningIndices(value);
+    const previousActive = this._activeWarningIndices;
+
+    for (const idx of currentActive) {
+      if (!previousActive.has(idx)) {
+        const warn = warnings[idx];
+        if (warn.notification?.enabled) {
+          this._fireWarningNotification(warn, stateObj);
+        }
+      }
+    }
+
+    this._activeWarningIndices = currentActive;
+  }
+
+  private _fireWarningNotification(warn: WarningConfig, stateObj: HassEntity): void {
+    const friendlyName = stateObj.attributes.friendly_name ?? stateObj.entity_id;
+    const label = warn.label ?? `${warn.from}–${warn.to}`;
+    const title = warn.notification!.title || friendlyName;
+    const message = warn.notification!.message || `Value entered warning range: ${label}`;
+    const serviceStr = warn.notification!.service || 'persistent_notification.create';
+    const [domain, service] = serviceStr.split('.');
+
+    this.hass.callService(domain, service, { title, message });
   }
 
   // ---- Rendering ----
@@ -324,6 +383,14 @@ export class LinearGaugeCard extends LitElement {
     const displayValue = numericValue !== null ? this._formatValue(numericValue) : stateValue;
     const displayValueWithUnit = unit ? `${displayValue} ${unit}` : displayValue;
     const id = this._instanceId;
+
+    const activeWarning = numericValue !== null ? this._getActiveWarning(numericValue) : null;
+    const cardBgStyle = activeWarning?.cardBackgroundColor
+      ? `background-color: ${activeWarning.cardBackgroundColor}`
+      : '';
+    const nameColorStyle = activeWarning?.headerTextColor
+      ? `color: ${activeWarning.headerTextColor}`
+      : '';
     const renderDialBeforeTicks =
       numericValue !== null && dial.style === 'bar-fill'
         ? renderDial(numericValue, this._config, layout, id)
@@ -335,6 +402,7 @@ export class LinearGaugeCard extends LitElement {
 
     return html`
       <ha-card
+        style="${cardBgStyle}"
         ${actionHandler({
           hasHold: !!this._config.hold_action,
           hasDoubleClick: !!this._config.double_tap_action,
@@ -350,7 +418,7 @@ export class LinearGaugeCard extends LitElement {
                         ${displayValueWithUnit}
                       </div>`
                     : ''}
-                  ${name !== null ? html`<div class="name">${name}</div>` : ''}
+                  ${name !== null ? html`<div class="name" style="${nameColorStyle}">${name}</div>` : ''}
                   ${showHeaderValue && !isHeaderValueLeft
                     ? html`<div class="value-badge" style="font-size:${dial.valueFontSize}px; color:${dial.valueColor}">
                         ${displayValueWithUnit}
@@ -506,6 +574,7 @@ export class LinearGaugeCard extends LitElement {
       ha-card {
         cursor: pointer;
         overflow: hidden;
+        transition: background-color 0.3s ease;
       }
 
       .card-content {
@@ -570,6 +639,7 @@ export class LinearGaugeCard extends LitElement {
         text-overflow: ellipsis;
         flex: 1;
         min-width: 0;
+        transition: color 0.3s ease;
       }
 
       .card-content.condensed .name {

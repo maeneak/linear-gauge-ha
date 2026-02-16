@@ -5,6 +5,7 @@ import {
   LinearGaugeCardConfig,
   SegmentConfig,
   WarningConfig,
+  WarningNotificationConfig,
   DialConfig,
   TicksConfig,
   HistoryConfig,
@@ -719,6 +720,92 @@ export class LinearGaugeCardEditor extends LitElement {
                   )}
                 </ha-select>
               </div>
+              <div class="sub-header">Actions</div>
+              <div class="row">
+                <div class="half color-field">
+                  <label>Card Background</label>
+                  <div class="color-row">
+                    <ha-switch
+                      .checked="${!!warn.cardBackgroundColor}"
+                      @change="${(e: Event) => {
+                        const checked = (e.target as HTMLInputElement).checked;
+                        this._updateWarningField(idx, 'cardBackgroundColor', checked ? warn.color + '33' : undefined);
+                      }}"
+                    ></ha-switch>
+                    ${warn.cardBackgroundColor
+                      ? html`<input
+                          type="color"
+                          .value="${warn.cardBackgroundColor.substring(0, 7)}"
+                          @input="${(e: Event) =>
+                            this._updateWarningField(idx, 'cardBackgroundColor', (e.target as HTMLInputElement).value + '33')}"
+                        />`
+                      : ''}
+                  </div>
+                </div>
+                <div class="half color-field">
+                  <label>Header Text Color</label>
+                  <div class="color-row">
+                    <ha-switch
+                      .checked="${!!warn.headerTextColor}"
+                      @change="${(e: Event) => {
+                        const checked = (e.target as HTMLInputElement).checked;
+                        this._updateWarningField(idx, 'headerTextColor', checked ? warn.color : undefined);
+                      }}"
+                    ></ha-switch>
+                    ${warn.headerTextColor
+                      ? html`<input
+                          type="color"
+                          .value="${warn.headerTextColor}"
+                          @input="${(e: Event) =>
+                            this._updateWarningField(idx, 'headerTextColor', (e.target as HTMLInputElement).value)}"
+                        />`
+                      : ''}
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field half">
+                  <ha-formfield .label="${'Send Notification'}">
+                    <ha-switch
+                      .checked="${warn.notification?.enabled ?? false}"
+                      @change="${(e: Event) => {
+                        const checked = (e.target as HTMLInputElement).checked;
+                        this._updateWarningNotification(idx, 'enabled', checked);
+                      }}"
+                    ></ha-switch>
+                  </ha-formfield>
+                </div>
+                <div class="half"></div>
+              </div>
+              ${warn.notification?.enabled
+                ? html`
+                    <div class="row">
+                      <ha-textfield
+                        class="half"
+                        .label="${'Notification Title'}"
+                        .value="${warn.notification?.title ?? ''}"
+                        @input="${(e: Event) =>
+                          this._updateWarningNotification(idx, 'title', (e.target as HTMLInputElement).value || undefined)}"
+                      ></ha-textfield>
+                      <ha-textfield
+                        class="half"
+                        .label="${'Service'}"
+                        .value="${warn.notification?.service ?? 'persistent_notification.create'}"
+                        @input="${(e: Event) =>
+                          this._updateWarningNotification(idx, 'service', (e.target as HTMLInputElement).value || undefined)}"
+                      ></ha-textfield>
+                    </div>
+                    <div class="row">
+                      <ha-textfield
+                        class="full"
+                        .label="${'Message'}"
+                        .value="${warn.notification?.message ?? ''}"
+                        @input="${(e: Event) =>
+                          this._updateWarningNotification(idx, 'message', (e.target as HTMLInputElement).value || undefined)}"
+                      ></ha-textfield>
+                    </div>
+                  `
+                : ''}
             </div>
           `,
         )}
@@ -751,6 +838,25 @@ export class LinearGaugeCardEditor extends LitElement {
   private _updateWarningField(idx: number, field: keyof WarningConfig, value: unknown): void {
     const warnings = [...(this._config.warnings ?? [])];
     warnings[idx] = { ...warnings[idx], [field]: value };
+    if (value === undefined) {
+      delete (warnings[idx] as any)[field];
+    }
+    this._updateConfig('warnings', warnings);
+  }
+
+  private _updateWarningNotification(idx: number, field: string, value: unknown): void {
+    const warnings = [...(this._config.warnings ?? [])];
+    const warn = { ...warnings[idx] };
+    const notification: WarningNotificationConfig = { ...(warn.notification ?? { enabled: false }) };
+    (notification as any)[field] = value;
+
+    if (field === 'enabled' && !value) {
+      delete warn.notification;
+    } else {
+      warn.notification = notification;
+    }
+
+    warnings[idx] = warn;
     this._updateConfig('warnings', warnings);
   }
 
@@ -1124,6 +1230,21 @@ export class LinearGaugeCardEditor extends LitElement {
         border-radius: 50%;
         border: 1px solid var(--divider-color);
         flex-shrink: 0;
+      }
+
+      .sub-header {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 8px 0 4px;
+      }
+
+      .full {
+        flex: 1;
+        min-width: 0;
+        width: 100%;
       }
     `;
   }
